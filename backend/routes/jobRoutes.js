@@ -7,7 +7,9 @@ const {
   getTrendingSkills, 
   sendMassEmail, 
   searchSeekers, 
-  uploadExcel 
+  uploadExcel,
+  deleteSeeker,
+  deleteJob 
 } = require('../controllers/jobController');
 const multer = require('multer');
 
@@ -19,7 +21,9 @@ router.get('/search', searchJobs);
 router.post('/whatsapp', sendWhatsAppMessage);
 router.get('/trending-skills', getTrendingSkills);
 router.post('/mass-email', sendMassEmail);
-router.get('/seekers', searchSeekers); // Fixed by importing searchSeekers
+router.get('/seekers', searchSeekers);
 router.post('/upload-excel', upload.single('file'), uploadExcel);
+router.post('/delete-seeker', deleteSeeker); // New route
+router.post('/delete-job', deleteJob);       // New route
 
 module.exports = router;

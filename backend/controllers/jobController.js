@@ -1,6 +1,7 @@
 // backend/controllers/jobController.js
 const JobPosting = require('../models/JobPosting');
 const JobSeeker = require('../models/JobSeeker');
+const JobProvider = require('../models/JobProvider');
 const twilio = require('twilio');
 const nodemailer = require('nodemailer');
 const xlsx = require('xlsx');
@@ -121,7 +122,6 @@ exports.searchSeekers = async (req, res) => {
   try {
     const query = {};
     if (skills) {
-      // Split skills and create a case-insensitive regex for each
       const skillArray = skills.split(',').map(skill => new RegExp(skill.trim(), 'i'));
       query.skills = { $in: skillArray };
     }
@@ -171,7 +171,8 @@ exports.uploadExcel = async (req, res) => {
         resume: row.resume || row.Resume,
         bio: row.bio || row.Bio,
       }));
-      await JobSeeker.insertMany(seekers, { ordered: false });
+      const result = await JobSeeker.insertMany(seekers, { ordered: false });
+      res.json({ message: 'Seekers uploaded successfully', seekersCount: result.length });
     } else if (type === 'jobs') {
       const jobs = data.map(row => ({
         jobTitle: row.jobTitle || row.JobTitle || 'Unnamed Job',
@@ -183,14 +184,35 @@ exports.uploadExcel = async (req, res) => {
         noticePeriod: row.noticePeriod || row.NoticePeriod,
         postedBy: row.postedBy || req.body.postedBy || null,
       }));
-      await JobPosting.insertMany(jobs, { ordered: false });
+      const result = await JobPosting.insertMany(jobs, { ordered: false });
+      res.json({ message: 'Jobs uploaded successfully', jobsCount: result.length });
     } else {
       return res.status(400).json({ message: 'Invalid type specified. Use "seekers" or "jobs"' });
     }
-
-    res.json({ message: 'Data uploaded successfully' });
   } catch (error) {
     console.error('Error uploading Excel:', error);
     res.status(500).json({ message: 'Error uploading Excel: ' + error.message });
+  }
+};
+
+exports.deleteSeeker = async (req, res) => {
+  const { seekerId } = req.body;
+  try {
+    await JobSeeker.findByIdAndDelete(seekerId);
+    res.json({ message: 'Seeker deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting seeker:', error);
+    res.status(500).json({ message: 'Error deleting seeker' });
+  }
+};
+
+exports.deleteJob = async (req, res) => {
+  const { jobId } = req.body;
+  try {
+    await JobPosting.findByIdAndDelete(jobId);
+    res.json({ message: 'Job deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting job:', error);
+    res.status(500).json({ message: 'Error deleting job' });
   }
 };

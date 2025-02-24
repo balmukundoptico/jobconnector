@@ -20,10 +20,11 @@ export const searchJobs = (params) => api.get('/jobs/search', { params });
 export const sendWhatsAppMessage = (data) => api.post('/jobs/whatsapp', data);
 export const getTrendingSkills = () => api.get('/jobs/trending-skills');
 export const sendMassEmail = (data) => api.post('/jobs/mass-email', data);
-// frontend/src/utils/api.js
 export const searchSeekers = (params) => api.get('/jobs/seekers', { params });
-export default api;
-// frontend/src/utils/api.js
 export const uploadExcel = (formData) => api.post('/jobs/upload-excel', formData, {
   headers: { 'Content-Type': 'multipart/form-data' },
 });
+export const deleteSeeker = (seekerId) => api.post('/jobs/delete-seeker', { seekerId });
+export const deleteJob = (jobId) => api.post('/jobs/delete-job', { jobId });
+
+export default api;
