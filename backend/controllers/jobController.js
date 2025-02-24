@@ -5,7 +5,8 @@ const JobProvider = require('../models/JobProvider');
 const twilio = require('twilio');
 const nodemailer = require('nodemailer');
 const xlsx = require('xlsx');
-
+const mongoose = require('mongoose');
+const Search = require('../models/Search'); // New model
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 const transporter = nodemailer.createTransport({
@@ -43,19 +44,41 @@ exports.postJob = async (req, res) => {
 };
 
 exports.searchJobs = async (req, res) => {
-  const { skills, experience, location } = req.query;
+  const { skills, experience, location, minCTC, maxCTC, noticePeriod, filters } = req.query;
 
   try {
     const query = {};
     if (skills) query.skills = { $in: skills.split(',') };
     if (experience) query.experienceRequired = { $lte: Number(experience) };
     if (location) query.location = new RegExp(location, 'i');
+    if (minCTC) query.maxCTC = { $gte: Number(minCTC) };
+    if (maxCTC) query.maxCTC = { $lte: Number(maxCTC) };
+    if (noticePeriod) query.noticePeriod = new RegExp(noticePeriod, 'i');
+    if (filters) {
+      const filterArr = filters.split(',');
+      if (filterArr.includes('viewed')) query.viewed = true;
+      if (filterArr.includes('new')) query.createdAt = { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
+    }
 
     const jobs = await JobPosting.find(query).populate('postedBy', 'companyName hrName hrWhatsappNumber');
     res.json(jobs);
   } catch (error) {
     console.error('Error searching jobs:', error);
     res.status(500).json({ message: 'Error searching jobs' });
+  }
+};
+
+
+exports.saveSearch = async (req, res) => {
+  const { userId, role, searchCriteria } = req.body;
+  try {
+    const search = new Search({ userId, role, searchCriteria });
+    const savedSearch = await search.save();
+    console.log('Saved search:', savedSearch); // Debug log
+    res.json({ message: 'Search saved successfully', data: savedSearch });
+  } catch (error) {
+    console.error('Error saving search:', error);
+    res.status(500).json({ message: 'Error saving search' });
   }
 };
 
@@ -117,7 +140,7 @@ exports.sendMassEmail = async (req, res) => {
 };
 
 exports.searchSeekers = async (req, res) => {
-  const { skills, experience, location, filters } = req.query;
+  const { skills, experience, location, minCTC, maxCTC, filters } = req.query;
 
   try {
     const query = {};
@@ -127,6 +150,8 @@ exports.searchSeekers = async (req, res) => {
     }
     if (experience) query.experience = { $lte: Number(experience) };
     if (location) query.location = new RegExp(location, 'i');
+    if (minCTC) query.currentCTC = { $gte: Number(minCTC) };
+    if (maxCTC) query.expectedCTC = { $lte: Number(maxCTC) };
     if (filters) {
       const filterArr = filters.split(',');
       if (filterArr.includes('viewed')) query.viewed = true;

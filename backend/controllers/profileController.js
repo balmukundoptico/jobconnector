@@ -2,6 +2,40 @@
 const JobSeeker = require('../models/JobSeeker');
 const JobProvider = require('../models/JobProvider');
 
+exports.updateSeekerProfile = async (req, res) => {
+  const { _id, fullName, whatsappNumber, email, skills, experience, location } = req.body;
+  try {
+    const seeker = await JobSeeker.findByIdAndUpdate(
+      _id,
+      { fullName, whatsappNumber, email, skills, experience: Number(experience), location },
+      { new: true }
+    );
+    if (!seeker) return res.status(404).json({ message: 'Seeker not found' });
+    res.json({ message: 'Seeker profile updated successfully', user: seeker });
+  } catch (error) {
+    console.error('Error updating seeker profile:', error);
+    res.status(500).json({ message: 'Error updating seeker profile' });
+  }
+};
+
+exports.updateProviderProfile = async (req, res) => {
+  const { _id, companyName, hrName, hrWhatsappNumber, email } = req.body;
+  try {
+    const provider = await JobProvider.findByIdAndUpdate(
+      _id,
+      { companyName, hrName, hrWhatsappNumber, email },
+      { new: true }
+    );
+    if (!provider) return res.status(404).json({ message: 'Provider not found' });
+    res.json({ message: 'Provider profile updated successfully', user: provider });
+  } catch (error) {
+    console.error('Error updating provider profile:', error);
+    res.status(500).json({ message: 'Error updating provider profile' });
+  }
+};
+
+// Existing functions (createSeekerProfile, createProviderProfile, getProfile) remain unchanged
+
 // Create or update Job Seeker profile
 exports.createSeekerProfile = async (req, res) => {
   const {
@@ -71,3 +105,4 @@ exports.getProfile = async (req, res) => {
     res.status(500).json({ message: 'Error fetching profile' });
   }
 };
+

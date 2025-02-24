@@ -13,6 +13,8 @@ export const verifyOTP = (data) => api.post('/auth/verify-otp', data);
 export const createSeekerProfile = (data) => api.post('/profile/seeker', data);
 export const createProviderProfile = (data) => api.post('/profile/provider', data);
 export const getProfile = (params) => api.get('/profile/get', { params });
+export const updateSeekerProfile = (data) => api.post('/profile/update-seeker', data);   // New
+export const updateProviderProfile = (data) => api.post('/profile/update-provider', data); // New
 
 // Job APIs
 export const postJob = (data) => api.post('/jobs/post', data);
@@ -26,5 +28,6 @@ export const uploadExcel = (formData) => api.post('/jobs/upload-excel', formData
 });
 export const deleteSeeker = (seekerId) => api.post('/jobs/delete-seeker', { seekerId });
 export const deleteJob = (jobId) => api.post('/jobs/delete-job', { jobId });
+export const saveSearch = (data) => api.post('/jobs/save-search', data); // New
 
 export default api;

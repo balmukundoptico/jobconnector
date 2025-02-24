@@ -9,7 +9,8 @@ const {
   searchSeekers, 
   uploadExcel,
   deleteSeeker,
-  deleteJob 
+  deleteJob,
+  saveSearch
 } = require('../controllers/jobController');
 const multer = require('multer');
 
@@ -25,5 +26,6 @@ router.get('/seekers', searchSeekers);
 router.post('/upload-excel', upload.single('file'), uploadExcel);
 router.post('/delete-seeker', deleteSeeker); // New route
 router.post('/delete-job', deleteJob);       // New route
+router.post('/save-search', saveSearch); // New route
 
 module.exports = router;
