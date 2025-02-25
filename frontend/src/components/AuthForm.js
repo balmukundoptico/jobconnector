@@ -29,7 +29,7 @@ const AuthForm = ({ role }) => {
       const errorMessage = error.response?.data?.message || 'Error sending OTP';
       setMessage(errorMessage);
       if (error.response?.status === 404 && errorMessage === 'User not found, please register first') {
-        setTimeout(() => navigate('/register'), 2000); // Redirect after 2 seconds
+        setTimeout(() => navigate('/register'), 2000);
       }
     }
   };
@@ -75,7 +75,6 @@ const AuthForm = ({ role }) => {
         bypass: true,
       };
       const response = await verifyOTP(payload);
-      console.log('Full Bypass Response:', response.data);
       setMessage(response.data.message);
 
       if (role === 'seeker') {
@@ -104,8 +103,11 @@ const AuthForm = ({ role }) => {
         }
       }
     } catch (error) {
-      console.error('Bypass OTP Error:', error.response?.data || error.message);
-      setMessage(error.response?.data?.message || 'Error bypassing OTP');
+      console.error('Bypass OTP Error:', error.message);
+      setMessage('Error bypassing OTP. Please try again or check server connection.');
+      if (error.message.includes('Network Error')) {
+        setTimeout(() => navigate('/register'), 2000); // Redirect to register on network error
+      }
     }
   };
 
