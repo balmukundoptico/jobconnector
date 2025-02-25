@@ -9,6 +9,7 @@ const AuthForm = ({ role }) => {
   const [message, setMessage] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const navigate = useNavigate();
+  const [serverOtp, setServerOtp] = useState('');
 
   const handleRequestOTP = async (e) => {
     e.preventDefault();
@@ -18,14 +19,18 @@ const AuthForm = ({ role }) => {
     }
     try {
       const isEmail = contact.includes('@');
-      const payload = isEmail ? { email: contact, role } : { whatsappNumber: contact, role };
+      const payload = isEmail ? { email: contact, role, loginRequest: true } : { whatsappNumber: contact, role, loginRequest: true };
       const response = await requestOTP(payload);
-      console.log('OTP for testing:', response.data.otp);
+      setServerOtp(response.data.serverOtp);
       setMessage(response.data.message);
       setOtpSent(true);
     } catch (error) {
       console.error('OTP Request Error:', error.response?.data || error.message);
-      setMessage(error.response?.data?.message || 'Error sending OTP');
+      const errorMessage = error.response?.data?.message || 'Error sending OTP';
+      setMessage(errorMessage);
+      if (error.response?.status === 404 && errorMessage === 'User not found, please register first') {
+        setTimeout(() => navigate('/register'), 2000); // Redirect after 2 seconds
+      }
     }
   };
 
@@ -36,15 +41,20 @@ const AuthForm = ({ role }) => {
       const payload = {
         ...(isEmail ? { email: contact } : { whatsappNumber: contact }),
         otp,
+        serverOtp,
         role,
         bypass: false,
       };
       const response = await verifyOTP(payload);
       setMessage(response.data.message);
 
-      if (role === 'seeker') navigate('/seeker-dashboard', { state: { user: response.data.user, contact } });
-      else if (role === 'provider') navigate('/provider-dashboard', { state: { user: response.data.user, contact } });
-      else if (role === 'admin') navigate('/admin-dashboard', { state: { user: response.data.user, contact } });
+      if (response.data.message === 'OTP verification successful') {
+        if (response.data.isNewUser) {
+          navigate(`/${role}-profile`, { state: { contact, isEmail } });
+        } else {
+          navigate(`/${role}-dashboard`, { state: { user: response.data.user, contact } });
+        }
+      }
     } catch (error) {
       console.error('OTP Verify Error:', error.response?.data || error.message);
       setMessage(error.response?.data?.message || 'Error verifying OTP');
@@ -124,7 +134,7 @@ const AuthForm = ({ role }) => {
               value={otp}
               onChange={(e) => setOtp(e.target.value)}
               className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white"
-              placeholder="Enter OTP (check console)"
+              placeholder="Enter OTP"
             />
           </div>
         )}

@@ -17,6 +17,7 @@ const jobSeekerSchema = new mongoose.Schema({
   bio: { type: String },
   createdAt: { type: Date, default: Date.now },
   viewed: { type: Boolean, default: false }, // New field for profile viewed
+  appliedJobs: [{ jobId: { type: mongoose.Schema.Types.ObjectId, ref: 'JobPosting' }, status: String }],
 });
 
 module.exports = mongoose.model('JobSeeker', jobSeekerSchema);

@@ -68,6 +68,52 @@ exports.searchJobs = async (req, res) => {
   }
 };
 
+exports.applyToJob = async (req, res) => {
+  const { seekerId, jobId } = req.body;
+  try {
+    const job = await JobPosting.findById(jobId);
+    if (!job) return res.status(404).json({ message: 'Job not found' });
+
+    const seeker = await JobSeeker.findById(seekerId);
+    if (!seeker) return res.status(404).json({ message: 'Seeker not found' });
+
+    // Update job with applicant
+    job.applicants = job.applicants || [];
+    if (!job.applicants.includes(seekerId)) {
+      job.applicants.push(seekerId);
+      await job.save();
+    }
+
+    // Update seeker with applied job
+    seeker.appliedJobs = seeker.appliedJobs || [];
+    if (!seeker.appliedJobs.some(app => app.jobId.toString() === jobId)) {
+      seeker.appliedJobs.push({ jobId, status: 'Applied' });
+      await seeker.save();
+    }
+
+    res.json({ message: 'Applied successfully' });
+  } catch (error) {
+    console.error('Error applying to job:', error);
+    res.status(500).json({ message: 'Error applying to job' });
+  }
+};
+
+exports.getApplicants = async (req, res) => {
+  const providerId = req.params.providerId;
+  try {
+    const jobs = await JobPosting.find({ postedBy: providerId }).populate('applicants', 'fullName email whatsappNumber skills experience location');
+    const applicants = jobs.flatMap(job => 
+      job.applicants.map(seeker => ({
+        jobTitle: job.jobTitle,
+        seeker,
+      }))
+    );
+    res.json(applicants);
+  } catch (error) {
+    console.error('Error fetching applicants:', error);
+    res.status(500).json({ message: 'Error fetching applicants' });
+  }
+};
 
 exports.saveSearch = async (req, res) => {
   const { userId, role, searchCriteria } = req.body;
@@ -239,5 +285,32 @@ exports.deleteJob = async (req, res) => {
   } catch (error) {
     console.error('Error deleting job:', error);
     res.status(500).json({ message: 'Error deleting job' });
+  }
+};
+
+exports.getProfile = async (req, res) => {
+  const { role, email, whatsappNumber, seekerId } = req.query;
+  console.log('getProfile query:', req.query); // Debug log
+  try {
+    let user;
+    if (seekerId) {
+      user = await JobSeeker.findById(seekerId);
+      console.log('Seeker found by ID:', user); // Debug log
+      if (!user) return res.status(404).json({ message: 'Seeker not found by ID' });
+    } else if (role === 'seeker') {
+      user = await JobSeeker.findOne(email ? { email } : { whatsappNumber });
+      console.log('Seeker found by email/whatsapp:', user); // Debug log
+      if (!user) return res.status(404).json({ message: 'Seeker not found by email or WhatsApp' });
+    } else if (role === 'provider') {
+      user = await JobProvider.findOne(email ? { email } : { whatsappNumber });
+      console.log('Provider found:', user); // Debug log
+      if (!user) return res.status(404).json({ message: 'Provider not found' });
+    } else {
+      return res.status(400).json({ message: 'Invalid request parameters' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    res.status(500).json({ message: 'Error fetching profile' });
   }
 };

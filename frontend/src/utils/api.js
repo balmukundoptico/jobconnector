@@ -29,5 +29,8 @@ export const uploadExcel = (formData) => api.post('/jobs/upload-excel', formData
 export const deleteSeeker = (seekerId) => api.post('/jobs/delete-seeker', { seekerId });
 export const deleteJob = (jobId) => api.post('/jobs/delete-job', { jobId });
 export const saveSearch = (data) => api.post('/jobs/save-search', data); // New
+// frontend/src/utils/api.js (partial)
+export const applyToJob = (data) => api.post('/jobs/apply', data);
+export const getApplicants = (providerId) => api.get(`/jobs/applicants/${providerId}`);
 
 export default api;

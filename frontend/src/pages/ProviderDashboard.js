@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { getProfile, postJob, searchJobs, updateProviderProfile, sendMassEmail, searchSeekers, saveSearch } from '../utils/api';
+import { getProfile, postJob, searchJobs, updateProviderProfile, sendMassEmail, searchSeekers, saveSearch, getApplicants } from '../utils/api'; // Added getApplicants
 
 const ProviderDashboard = () => {
   const { state } = useLocation();
@@ -39,6 +39,7 @@ const ProviderDashboard = () => {
   const [editForm, setEditForm] = useState({});
   const [notification, setNotification] = useState('');
   const [savedSearches, setSavedSearches] = useState([]);
+  const [applicants, setApplicants] = useState([]);
 
   useEffect(() => {
     if (!state?.contact) {
@@ -63,6 +64,9 @@ const ProviderDashboard = () => {
           const jobsResponse = await searchJobs({});
           const userJobs = jobsResponse.data.filter(job => job.postedBy && job.postedBy._id === user._id);
           setPostedJobs(userJobs);
+
+          const applicantsResponse = await getApplicants(user._id);
+          setApplicants(applicantsResponse.data);
         }
       } catch (error) {
         console.error('Error fetching initial data:', error);
@@ -214,6 +218,10 @@ const ProviderDashboard = () => {
     setShowSearchSeekers(!showSearchSeekers);
   };
 
+  const handleViewSeekerProfile = (seekerId) => {
+    navigate(`/seeker-profile/${seekerId}`);
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-950">
@@ -284,13 +292,13 @@ const ProviderDashboard = () => {
                 />
                 <button
                   onClick={handleSaveProfile}
-                  className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                  className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 push-button"
                 >
                   Save Profile
                 </button>
                 <button
                   onClick={() => setEditMode(false)}
-                  className="w-full bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+                  className="w-full bg-gray-500 text-white p-2 rounded hover:bg-gray-600 push-button"
                 >
                   Cancel
                 </button>
@@ -303,7 +311,7 @@ const ProviderDashboard = () => {
                 <p><strong>Email:</strong> {user.email || 'N/A'}</p>
                 <button
                   onClick={() => setEditMode(true)}
-                  className="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                  className="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 push-button"
                 >
                   Edit Profile
                 </button>
@@ -313,19 +321,19 @@ const ProviderDashboard = () => {
           <div className="flex space-x-4 border border-gray-200 dark:border-gray-700 p-2 rounded-lg">
             <button
               onClick={() => setShowForm(!showForm)}
-              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+              className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600 push-button"
             >
               {showForm ? 'Hide Form' : 'Post a New Job'}
             </button>
             <button
               onClick={handleMassMailToggle}
-              className="bg-purple-500 text-white p-2 rounded hover:bg-purple-600"
+              className="bg-purple-500 text-white p-2 rounded hover:bg-purple-600 push-button"
             >
               {showMassMail ? 'Hide Mass Mail' : 'Send Mass Email'}
             </button>
             <button
               onClick={handleSearchSeekersToggle}
-              className="bg-teal-500 text-white p-2 rounded hover:bg-teal-600"
+              className="bg-teal-500 text-white p-2 rounded hover:bg-teal-600 push-button"
             >
               {showSearchSeekers ? 'Hide Search' : 'Search Job Seekers'}
             </button>
@@ -343,7 +351,7 @@ const ProviderDashboard = () => {
               <input name="location" value={jobForm.location} onChange={handleJobChange} placeholder="Location" className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white" required />
               <input name="maxCTC" type="number" value={jobForm.maxCTC} onChange={handleJobChange} placeholder="Max CTC" className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white" required />
               <input name="noticePeriod" value={jobForm.noticePeriod} onChange={handleJobChange} placeholder="Notice Period" className="w-full p-2 border rounded dark:bg-gray-700 dark:text-white" required />
-              <button type="submit" className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600">Post Job</button>
+              <button type="submit" className="w-full bg-green-500 text-white p-2 rounded hover:bg-green-600 push-button">Post Job</button>
             </form>
           )}
           {showMassMail && (
@@ -409,11 +417,11 @@ const ProviderDashboard = () => {
                   </label>
                 </div>
                 <div className="flex space-x-4">
-                  <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Search Seekers</button>
+                  <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 push-button">Search Seekers</button>
                   <button
                     type="button"
                     onClick={handleSaveSearch}
-                    className="w-full bg-teal-500 text-white p-2 rounded hover:bg-teal-600"
+                    className="w-full bg-teal-500 text-white p-2 rounded hover:bg-teal-600 push-button"
                   >
                     Save Search
                   </button>
@@ -452,7 +460,7 @@ const ProviderDashboard = () => {
                     </div>
                   ))}
                 </div>
-                <button type="submit" className="w-full bg-purple-500 text-white p-2 rounded hover:bg-purple-600">Send Emails</button>
+                <button type="submit" className="w-full bg-purple-500 text-white p-2 rounded hover:bg-purple-600 push-button">Send Emails</button>
               </form>
             </div>
           )}
@@ -519,11 +527,11 @@ const ProviderDashboard = () => {
                   </label>
                 </div>
                 <div className="flex space-x-4">
-                  <button type="submit" className="w-full bg-teal-500 text-white p-2 rounded hover:bg-teal-600">Search</button>
+                  <button type="submit" className="w-full bg-teal-500 text-white p-2 rounded hover:bg-teal-600 push-button">Search</button>
                   <button
                     type="button"
                     onClick={handleSaveSearch}
-                    className="w-full bg-teal-500 text-white p-2 rounded hover:bg-teal-600"
+                    className="w-full bg-teal-500 text-white p-2 rounded hover:bg-teal-600 push-button"
                   >
                     Save Search
                   </button>
@@ -562,7 +570,7 @@ const ProviderDashboard = () => {
                         href={`https://api.whatsapp.com/send?phone=${seeker.whatsappNumber?.replace(/\D/g, '')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="mt-2 inline-block bg-green-500 text-white p-2 rounded hover:bg-green-600"
+                        className="mt-2 inline-block bg-green-500 text-white p-2 rounded hover:bg-green-600 push-button"
                       >
                         Get Connected on WhatsApp
                       </a>
@@ -589,6 +597,29 @@ const ProviderDashboard = () => {
               ))
             ) : (
               <p className="text-gray-900 dark:text-gray-100">No jobs posted yet</p>
+            )}
+          </div>
+          <div className="space-y-4">
+            <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Applicants</h3>
+            {applicants.length > 0 ? (
+              <ul className="space-y-2">
+                {applicants.map((applicant, index) => (
+                  <li key={index} className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+                    <p><strong>Job:</strong> {applicant.jobTitle}</p>
+                    <p><strong>Seeker:</strong> {applicant.seeker.fullName}</p>
+                    <p><strong>Email:</strong> {applicant.seeker.email || 'N/A'}</p>
+                    <p><strong>WhatsApp:</strong> {applicant.seeker.whatsappNumber || 'N/A'}</p>
+                    <button
+                      onClick={() => handleViewSeekerProfile(applicant.seeker._id)}
+                      className="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 push-button"
+                    >
+                      View Profile
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-gray-900 dark:text-gray-100">No applicants yet</p>
             )}
           </div>
         </div>

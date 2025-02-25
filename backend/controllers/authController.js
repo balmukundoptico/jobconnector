@@ -8,12 +8,10 @@ const Admin = require('../models/Admin');
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false,
+  service: 'gmail',
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.EMAIL_USER, // balmukund.ahirwar@opticosolutions.com
+    pass: process.env.EMAIL_PASS, // Your App Password placeholder
   },
 });
 
@@ -26,6 +24,7 @@ const sendWhatsAppOTP = async (whatsappNumber, otp) => {
       from: process.env.TWILIO_PHONE_NUMBER,
       to: `whatsapp:${whatsappNumber}`,
     });
+    console.log(`WhatsApp OTP sent to ${whatsappNumber}`);
   } catch (error) {
     console.error('Twilio Error:', error.message);
     throw new Error('Failed to send WhatsApp OTP');
@@ -40,6 +39,7 @@ const sendEmailOTP = async (email, otp) => {
       subject: 'Job Connector OTP',
       text: `Your OTP is: ${otp}`,
     });
+    console.log(`Email OTP sent to ${email}`);
   } catch (error) {
     console.error('Nodemailer Error:', error.message);
     throw new Error('Failed to send Email OTP');
@@ -47,20 +47,38 @@ const sendEmailOTP = async (email, otp) => {
 };
 
 exports.requestOTP = async (req, res) => {
-  const { whatsappNumber, email, role } = req.body;
+  const { whatsappNumber, email, role, loginRequest } = req.body;
   const otp = generateOTP();
 
   try {
     if (!whatsappNumber && !email) {
       return res.status(400).json({ message: 'WhatsApp number or email is required' });
     }
+    if (!role) {
+      return res.status(400).json({ message: 'Role is required' });
+    }
+
+    let user;
+    if (role === 'seeker') {
+      user = await JobSeeker.findOne({ $or: [{ whatsappNumber }, { email }] });
+    } else if (role === 'provider') {
+      user = await JobProvider.findOne({ $or: [{ hrWhatsappNumber: whatsappNumber }, { email }] });
+    } else if (role === 'admin') {
+      user = await Admin.findOne({ $or: [{ whatsappNumber }, { email }] });
+    } else {
+      return res.status(400).json({ message: 'Invalid role specified' });
+    }
+
+    if (loginRequest && !user) {
+      return res.status(404).json({ message: 'User not found, please register first' });
+    }
 
     if (whatsappNumber) {
       await sendWhatsAppOTP(whatsappNumber, otp);
-      return res.json({ message: 'OTP sent on WhatsApp', otp }); // For testing
+      return res.json({ message: 'OTP sent on WhatsApp', serverOtp: otp });
     } else if (email) {
       await sendEmailOTP(email, otp);
-      return res.json({ message: 'OTP sent on email', otp }); // For testing
+      return res.json({ message: 'OTP sent on email', serverOtp: otp });
     }
   } catch (error) {
     console.error('Error sending OTP:', error.message);
@@ -69,54 +87,53 @@ exports.requestOTP = async (req, res) => {
 };
 
 exports.verifyOTP = async (req, res) => {
-  const { whatsappNumber, email, otp, role, bypass } = req.body;
+  const { whatsappNumber, email, otp, serverOtp, role, bypass } = req.body;
 
   try {
+    if (!whatsappNumber && !email) {
+      return res.status(400).json({ message: 'WhatsApp number or email is required' });
+    }
+    if (!role) {
+      return res.status(400).json({ message: 'Role is required' });
+    }
+
     let user;
     let isNewUser = false;
 
     if (role === 'seeker') {
       user = await JobSeeker.findOne({ $or: [{ whatsappNumber }, { email }] });
-      if (!user) {
-        isNewUser = true;
-        console.log('New seeker detected:', { whatsappNumber, email });
-      } else {
-        console.log('Existing seeker found:', user);
-      }
+      if (!user) isNewUser = true;
     } else if (role === 'provider') {
       user = await JobProvider.findOne({ $or: [{ hrWhatsappNumber: whatsappNumber }, { email }] });
-      if (!user) {
-        isNewUser = true;
-        console.log('New provider detected:', { whatsappNumber, email });
-      } else {
-        console.log('Existing provider found:', user);
-      }
+      if (!user) isNewUser = true;
     } else if (role === 'admin') {
       user = await Admin.findOne({ $or: [{ whatsappNumber }, { email }] });
-      if (!user) {
-        isNewUser = true;
-        console.log('New admin detected:', { whatsappNumber, email });
-      } else {
-        console.log('Existing admin found:', user);
-      }
-    }
-
-    if (!user && !bypass) {
-      console.log('No user found for OTP login:', { whatsappNumber, email, role });
-      return res.status(400).json({ message: 'User not found' });
+      if (!user) isNewUser = true;
+    } else {
+      return res.status(400).json({ message: 'Invalid role specified' });
     }
 
     if (bypass) {
-      console.log('Bypass response:', { message: 'Bypass successful', user, isNewUser });
       return res.json({
         message: 'Bypass successful',
-        user, // null for new users, object for existing
-        isNewUser, // true for new, false for existing
+        user,
+        isNewUser,
       });
     }
 
-    console.log('OTP login successful for:', user);
-    res.json({ message: 'Login successful', user });
+    if (!otp || !serverOtp) {
+      return res.status(400).json({ message: 'OTP and server OTP are required' });
+    }
+
+    if (otp === serverOtp) {
+      return res.json({
+        message: 'OTP verification successful',
+        user,
+        isNewUser,
+      });
+    } else {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
   } catch (error) {
     console.error('Error verifying OTP:', error.message || error);
     res.status(500).json({ message: 'Error verifying OTP' });

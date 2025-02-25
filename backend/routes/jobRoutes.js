@@ -10,7 +10,9 @@ const {
   uploadExcel,
   deleteSeeker,
   deleteJob,
-  saveSearch
+  saveSearch,
+  applyToJob, 
+  getApplicants
 } = require('../controllers/jobController');
 const multer = require('multer');
 
@@ -27,5 +29,8 @@ router.post('/upload-excel', upload.single('file'), uploadExcel);
 router.post('/delete-seeker', deleteSeeker); // New route
 router.post('/delete-job', deleteJob);       // New route
 router.post('/save-search', saveSearch); // New route
+// backend/routes/jobRoutes.js (partial)
+router.post('/apply', applyToJob); // New route
+router.get('/applicants/:providerId', getApplicants); // New route
 
 module.exports = router;

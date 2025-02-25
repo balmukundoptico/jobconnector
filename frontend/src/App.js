@@ -8,6 +8,7 @@ import SeekerDashboard from './pages/SeekerDashboard';
 import ProviderDashboard from './pages/ProviderDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import SeekerProfile from './pages/SeekerProfile';
+import SeekerProfileView from './pages/SeekerProfileView'; // New profile view
 import ProviderProfile from './pages/ProviderProfile';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -24,6 +25,7 @@ function App() {
           <Route path="/provider-dashboard" element={<ProviderDashboard />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
           <Route path="/seeker-profile" element={<SeekerProfile />} />
+          <Route path="/seeker-profile/:id" element={<SeekerProfileView />} />
           <Route path="/provider-profile" element={<ProviderProfile />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

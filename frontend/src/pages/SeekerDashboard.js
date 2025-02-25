@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import { getProfile, searchJobs, updateSeekerProfile, saveSearch } from '../utils/api';
+import { getProfile, searchJobs, updateSeekerProfile, saveSearch, applyToJob } from '../utils/api'; // Added applyToJob
 
 const SeekerDashboard = () => {
   const { state } = useLocation();
@@ -42,6 +42,7 @@ const SeekerDashboard = () => {
           } else {
             setUser(response.data);
             setEditForm(response.data);
+            setAppliedJobs(response.data.appliedJobs || []); // Load existing applied jobs
             if (!response.data.skills || !response.data.experience) {
               setShowPrompt(true);
             }
@@ -72,7 +73,10 @@ const SeekerDashboard = () => {
     e.preventDefault();
     try {
       const response = await searchJobs({ ...searchForm, filters: searchForm.filters.join(',') });
-      setJobs(response.data);
+      setJobs(response.data.map(job => ({
+        ...job,
+        applied: appliedJobs.some(applied => applied.jobId === job._id),
+      })));
     } catch (error) {
       console.error('Error searching jobs:', error);
       setJobs([]);
@@ -96,6 +100,19 @@ const SeekerDashboard = () => {
     }
   };
 
+  const handleApplyToJob = async (jobId, providerNumber) => {
+    try {
+      const response = await applyToJob({ seekerId: user._id, jobId });
+      setAppliedJobs(prev => [...prev, { jobId, title: jobs.find(job => job._id === jobId).jobTitle, status: 'Applied' }]);
+      setJobs(prev => prev.map(job => job._id === jobId ? { ...job, applied: true } : job));
+      setNotification(`Applied to job successfully! Contact: ${providerNumber}`);
+      setTimeout(() => setNotification(''), 3000);
+    } catch (error) {
+      console.error('Error applying to job:', error);
+      setNotification('Error applying to job');
+    }
+  };
+
   const handleEditChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
@@ -114,7 +131,7 @@ const SeekerDashboard = () => {
   };
 
   const handleWhatsAppConnect = (job) => {
-    setAppliedJobs(prev => [...prev, { jobId: job._id, title: job.jobTitle, status: 'Sent' }]);
+    setAppliedJobs(prev => [...prev, { jobId: job._id, title: job.jobTitle, status: 'Connected' }]);
     setNotification(`Connected via WhatsApp for ${job.jobTitle}`);
     setTimeout(() => setNotification(''), 3000);
   };
@@ -145,7 +162,7 @@ const SeekerDashboard = () => {
               </p>
               <button
                 onClick={handleCompleteProfile}
-                className="mt-2 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 w-full sm:w-auto"
+                className="mt-2 bg-yellow-500 text-white p-2 rounded hover:bg-yellow-600 w-full sm:w-auto push-button"
               >
                 Complete Profile
               </button>
@@ -199,13 +216,13 @@ const SeekerDashboard = () => {
                 />
                 <button
                   onClick={handleSaveProfile}
-                  className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                  className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 push-button"
                 >
                   Save Profile
                 </button>
                 <button
                   onClick={() => setEditMode(false)}
-                  className="w-full bg-gray-500 text-white p-2 rounded hover:bg-gray-600"
+                  className="w-full bg-gray-500 text-white p-2 rounded hover:bg-gray-600 push-button"
                 >
                   Cancel
                 </button>
@@ -220,7 +237,7 @@ const SeekerDashboard = () => {
                 <p className="text-gray-900 dark:text-gray-100 text-sm sm:text-base"><strong>Location:</strong> {user.location || 'N/A'}</p>
                 <button
                   onClick={() => setEditMode(true)}
-                  className="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+                  className="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600 push-button"
                 >
                   Edit Profile
                 </button>
@@ -295,11 +312,11 @@ const SeekerDashboard = () => {
               </label>
             </div>
             <div className="flex space-x-4">
-              <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">Search</button>
+              <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600 push-button">Search</button>
               <button
                 type="button"
                 onClick={handleSaveSearch}
-                className="w-full bg-teal-500 text-white p-2 rounded hover:bg-teal-600"
+                className="w-full bg-teal-500 text-white p-2 rounded hover:bg-teal-600 push-button"
               >
                 Save Search
               </button>
@@ -334,15 +351,24 @@ const SeekerDashboard = () => {
                   <p className="text-gray-900 dark:text-gray-100 text-sm sm:text-base"><strong>Location:</strong> {job.location}</p>
                   <p className="text-gray-900 dark:text-gray-100 text-sm sm:text-base"><strong>Max CTC:</strong> {job.maxCTC}</p>
                   <p className="text-gray-900 dark:text-gray-100 text-sm sm:text-base"><strong>Notice Period:</strong> {job.noticePeriod}</p>
-                  <a
-                    href={`https://api.whatsapp.com/send?phone=${job.postedBy.hrWhatsappNumber?.replace(/\D/g, '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => handleWhatsAppConnect(job)}
-                    className="mt-2 inline-block w-full sm:w-auto bg-green-500 text-white p-2 rounded hover:bg-green-600"
-                  >
-                    Get Connected on WhatsApp
-                  </a>
+                  <div className="mt-2 flex space-x-2">
+                    <a
+                      href={`https://api.whatsapp.com/send?phone=${job.postedBy.hrWhatsappNumber?.replace(/\D/g, '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => handleWhatsAppConnect(job)}
+                      className="bg-green-500 text-white p-2 rounded hover:bg-green-600 push-button"
+                    >
+                      Get Connected on WhatsApp
+                    </a>
+                    <button
+                      onClick={() => handleApplyToJob(job._id, job.postedBy.hrWhatsappNumber)}
+                      className={`p-2 rounded push-button ${job.applied ? 'bg-gray-500 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
+                      disabled={job.applied}
+                    >
+                      {job.applied ? 'Applied' : 'Apply'}
+                    </button>
+                  </div>
                 </div>
               ))
             ) : (
