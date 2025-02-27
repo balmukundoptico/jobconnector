@@ -1,17 +1,21 @@
 // mobileapp/components/Header.js
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialIcons'; // Using MaterialIcons for simplicity
+import { useNavigation, useRoute } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const Header = ({ title, toggleDarkMode, isDarkMode }) => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const canGoBack = navigation.canGoBack();
 
   return (
     <View style={[styles.header, isDarkMode ? styles.darkHeader : styles.lightHeader]}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <Icon name="arrow-back" size={24} color={isDarkMode ? '#ddd' : '#fff'} />
-      </TouchableOpacity>
+      {canGoBack && (
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Icon name="arrow-back" size={24} color={isDarkMode ? '#ddd' : '#fff'} />
+        </TouchableOpacity>
+      )}
       <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>{title || 'JobConnector'}</Text>
       <View style={styles.rightContainer}>
         <TouchableOpacity onPress={toggleDarkMode} style={styles.modeButton}>
@@ -31,7 +35,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 10,
-    paddingTop: 40, // Lowered from top
+    paddingTop: 40,
     borderBottomWidth: 1,
   },
   lightHeader: { backgroundColor: '#007AFF', borderBottomColor: '#005BB5' },
