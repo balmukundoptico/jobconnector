@@ -3,7 +3,7 @@ import axios from 'axios'; // HTTP client
 
 // Real API connected to Render backend
 const api = axios.create({
-  baseURL: 'https://job-portal-backend-f8nm.onrender.com/api', // Live Render URL
+  baseURL: 'https://job-connector.onrender.com/api', // Live Render URL
   headers: {
     'Content-Type': 'application/json',
   },
