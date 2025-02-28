@@ -1,11 +1,10 @@
-// models/Admin.js
+// O:\JobConnector\backend\models\Admin.js
 const mongoose = require('mongoose');
 
 const adminSchema = new mongoose.Schema({
-  whatsappNumber: { type: String, unique: true },
-  email: { type: String, unique: true },
-  role: { type: String, default: 'admin' },
-  createdAt: { type: Date, default: Date.now },
-});
+  fullName: { type: String, required: true },
+  whatsappNumber: { type: String },
+  email: { type: String },
+}, { timestamps: true });
 
 module.exports = mongoose.model('Admin', adminSchema);

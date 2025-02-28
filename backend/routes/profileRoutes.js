@@ -1,13 +1,15 @@
-// backend/routes/profileRoutes.js (partial)
+// O:\JobConnector\backend\routes\profileRoutes.js
 const express = require('express');
-const { createSeekerProfile, createProviderProfile, getProfile, updateSeekerProfile, updateProviderProfile } = require('../controllers/profileController');
+const multer = require('multer');
+const { createSeekerProfile, createProviderProfile, updateSeekerProfile, updateProviderProfile, getProfile } = require('../controllers/profileController');
 
 const router = express.Router();
+const upload = multer({ dest: 'uploads/' });
 
+router.get('/', getProfile);
 router.post('/seeker', createSeekerProfile);
 router.post('/provider', createProviderProfile);
-router.get('/get', getProfile);
-router.post('/update-seeker', updateSeekerProfile);   // New route
-router.post('/update-provider', updateProviderProfile); // New route
+router.post('/seeker/update', upload.single('resume'), updateSeekerProfile);
+router.post('/provider/update', updateProviderProfile);
 
 module.exports = router;

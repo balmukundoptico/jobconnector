@@ -1,35 +1,38 @@
-// mobileapp/utils/api.js
-import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
+// O:\JobConnector\mobileapp\utils\api.js
+import axios from 'axios'; // HTTP client
 
-// Mock API for production testing
-const mockApi = {
-  post: async (endpoint, data) => {
-    console.log('Mock API call:', endpoint, data);
-    if (endpoint === '/auth/request-otp') {
-      return { data: { message: 'OTP sent (mock)', serverOtp: '123456' } };
-    } else if (endpoint === '/auth/verify-otp') {
-      if (data.bypass) {
-        const isNewUser = !localStorage.getItem(`user-${data.email || data.whatsappNumber}`);
-        return { data: { message: 'Bypass successful', isNewUser, success: true } };
-      }
-      return { data: { message: 'OTP verification successful', isNewUser: true } };
-    } else if (endpoint === '/profile/seeker' || endpoint === '/profile/provider') {
-      return { data: { message: 'Profile saved' } };
-    }
-    throw new Error('Mock API endpoint not implemented');
+// Real API connected to Render backend
+const api = axios.create({
+  baseURL: 'https://job-portal-backend-f8nm.onrender.com/api', // Live Render URL
+  headers: {
+    'Content-Type': 'application/json',
   },
-  get: async () => ({ data: [] }) // Mock for job search
-};
-
-// Use mock API in production builds
-const api = process.env.NODE_ENV === 'production' ? mockApi : axios.create({
-  baseURL: 'http://192.168.31.124:5000/api', // Local dev URL
 });
 
+// Exported functions matching website endpoints
 export const requestOTP = (data) => api.post('/auth/request-otp', data);
 export const verifyOTP = (data) => api.post('/auth/verify-otp', data);
+export const getProfile = (data) => api.get('/profile', { params: data });
 export const createSeekerProfile = (data) => api.post('/profile/seeker', data);
 export const createProviderProfile = (data) => api.post('/profile/provider', data);
+export const updateSeekerProfile = (data) => api.post('/profile/seeker/update', data, {
+  headers: { 'Content-Type': 'multipart/form-data' },
+});
+export const updateProviderProfile = (data) => api.post('/profile/provider/update', data);
+export const postJob = (data) => api.post('/jobs/post', data);
+export const searchJobs = (data) => api.get('/jobs/search', { params: data });
+export const sendWhatsAppMessage = (data) => api.post('/jobs/whatsapp', data);
+export const getTrendingSkills = () => api.get('/jobs/trending-skills');
+export const sendMassEmail = (data) => api.post('/jobs/mass-email', data);
+export const searchSeekers = (data) => api.get('/jobs/seekers', { params: data });
+export const uploadExcel = (data) => api.post('/jobs/upload-excel', data, {
+  headers: { 'Content-Type': 'multipart/form-data' },
+});
+export const deleteSeeker = (data) => api.post('/jobs/delete-seeker', data);
+export const deleteJob = (data) => api.post('/jobs/delete', data);
+export const saveSearch = (data) => api.post('/jobs/save-search', data);
+export const applyToJob = (data) => api.post('/jobs/apply-job', data);
+export const getApplicants = (jobId) => api.get('/jobs/applicants', { params: { jobId } });
+export const getPostedJobs = () => api.get('/jobs/posted');
 
-export default api;
+export default api; // Export API instance

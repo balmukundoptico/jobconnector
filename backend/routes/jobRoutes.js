@@ -1,5 +1,5 @@
-// backend/routes/jobRoutes.js
-const express = require('express');
+// O:\JobConnector\backend\routes\jobRoutes.js
+const express = require('express'); // Express for routing
 const { 
   postJob, 
   searchJobs, 
@@ -13,24 +13,40 @@ const {
   saveSearch,
   applyToJob, 
   getApplicants
-} = require('../controllers/jobController');
-const multer = require('multer');
+} = require('../controllers/jobController'); // Existing controller functions
+const multer = require('multer'); // Multer for file uploads
 
-const upload = multer({ dest: 'uploads/' });
-const router = express.Router();
+const upload = multer({ dest: 'uploads/' }); // Configure multer
+const router = express.Router(); // Create router instance
 
-router.post('/post', postJob);
-router.get('/search', searchJobs);
-router.post('/whatsapp', sendWhatsAppMessage);
-router.get('/trending-skills', getTrendingSkills);
-router.post('/mass-email', sendMassEmail);
-router.get('/seekers', searchSeekers);
-router.post('/upload-excel', upload.single('file'), uploadExcel);
-router.post('/delete-seeker', deleteSeeker); // New route
-router.post('/delete-job', deleteJob);       // New route
-router.post('/save-search', saveSearch); // New route
-// backend/routes/jobRoutes.js (partial)
-router.post('/apply', applyToJob); // New route
-router.get('/applicants/:providerId', getApplicants); // New route
+// Existing routes from your old code
+router.post('/post', postJob); // Post a new job
+router.get('/search', searchJobs); // Search jobs for seekers
+router.post('/whatsapp', sendWhatsAppMessage); // Send WhatsApp message
+router.get('/trending-skills', getTrendingSkills); // Get trending skills
+router.post('/mass-email', sendMassEmail); // Send mass email
+router.get('/seekers', searchSeekers); // Search seekers
+router.post('/upload-excel', upload.single('file'), uploadExcel); // Upload Excel file
+router.post('/delete-seeker', deleteSeeker); // Delete a seeker
+router.post('/delete-job', deleteJob); // Delete a job (old endpoint)
+router.post('/save-search', saveSearch); // Save a search
+router.post('/apply', applyToJob); // Apply to a job (old endpoint)
+router.get('/applicants/:providerId', getApplicants); // Get applicants for provider (old endpoint)
 
-module.exports = router;
+// Updated routes for mobile app compatibility
+router.get('/posted', async (req, res) => { // GET /api/jobs/posted - Fetch provider's posted jobs
+  try {
+    const jobs = await searchJobs({ postedBy: req.user?._id }); // Assuming user ID from auth middleware or params later
+    res.json(jobs);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching posted jobs', error: error.message });
+  }
+});
+
+router.post('/delete', deleteJob); // POST /api/jobs/delete - Alias for delete-job
+
+router.post('/apply-job', applyToJob); // POST /api/jobs/apply-job - Alias for apply
+
+router.get('/applicants', getApplicants); // GET /api/jobs/applicants - Fetch applicants with jobId filter
+
+module.exports = router; // Export router

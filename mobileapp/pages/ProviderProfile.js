@@ -1,90 +1,135 @@
-// mobileapp/pages/ProviderProfile.js
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { createProviderProfile } from '../utils/api';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+// O:\JobConnector\mobileapp\pages\ProviderProfile.js
+import React, { useState, useEffect } from 'react'; // React core
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native'; // RN components
+import { useNavigation } from '@react-navigation/native'; // Navigation hook
+import { createProviderProfile, updateProviderProfile } from '../utils/api'; // API functions
+import Header from '../components/Header'; // Reusable header
+import Footer from '../components/Footer'; // Reusable footer
 
-const ProviderProfile = ({ route, isDarkMode, toggleDarkMode }) => {
-  const { contact } = route.params || {};
-  const [companyName, setCompanyName] = useState('');
-  const [hrName, setHrName] = useState('');
-  const [hrWhatsappNumber, setHrWhatsappNumber] = useState('');
-  const [email, setEmail] = useState('');
-  const [message, setMessage] = useState('');
-  const navigation = useNavigation();
-  const [saveScale] = useState(new Animated.Value(1));
+// ProviderProfile component with full fields and live backend
+const ProviderProfile = ({ isDarkMode, toggleDarkMode, route }) => {
+  const [formData, setFormData] = useState({
+    companyName: '',
+    hrName: '',
+    hrWhatsappNumber: route?.params?.contact && !route?.params?.isEmail ? route.params.contact : '',
+    email: route?.params?.contact && route?.params?.isEmail ? route.params.contact : '',
+  });
+  const [message, setMessage] = useState(''); // Success/error message
+  const [profileCreated, setProfileCreated] = useState(false); // Tracks if profile is saved
+  const [isEditMode, setIsEditMode] = useState(!!route?.params?.user); // Edit mode if user exists
+  const navigation = useNavigation(); // Navigation instance
+  const [submitScale] = useState(new Animated.Value(1)); // Animation scale for submit button
+  const [dashboardScale] = useState(new Animated.Value(1)); // Animation scale for dashboard button
 
-  const handleSaveProfile = async () => {
+  // Fetch existing profile if in edit mode
+  useEffect(() => {
+    if (isEditMode && route?.params?.user) {
+      setFormData({
+        companyName: route.params.user.companyName || '',
+        hrName: route.params.user.hrName || '',
+        hrWhatsappNumber: route.params.user.hrWhatsappNumber || '',
+        email: route.params.user.email || '',
+      });
+    }
+  }, [route, isEditMode]);
+
+  // Handle form input changes
+  const handleChange = (name, value) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Handle submitting the profile
+  const handleSubmitProfile = async () => {
+    if (!formData.companyName || !formData.hrName) {
+      setMessage('Please fill in company name and HR name');
+      return;
+    }
     try {
-      const isEmail = contact.includes('@');
-      const payload = {
-        companyName,
-        hrName,
-        hrWhatsappNumber: isEmail ? hrWhatsappNumber : contact,
-        email: isEmail ? contact : email,
-      };
-      await createProviderProfile(payload);
-      setMessage('Profile saved successfully');
-      setTimeout(() => navigation.navigate('ProviderDashboard', { user: payload, contact }), 2000);
+      let response;
+      if (isEditMode) {
+        response = await updateProviderProfile({ ...formData, _id: route.params.user._id }); // Update existing profile
+      } else {
+        response = await createProviderProfile(formData); // Create new profile
+      }
+      setMessage(response.data.message); // Show success message
+      setProfileCreated(true); // Mark profile as created/updated
     } catch (error) {
-      setMessage('Error saving profile');
+      setMessage('Error saving profile: ' + error.message); // Show error
     }
   };
 
-  const handlePressIn = (scale) => {
-    Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
+  // Handle navigating to ProviderDashboard
+  const handleGoToDashboard = () => {
+    navigation.navigate('ProviderDashboard', { user: { ...route.params.user, ...formData } }); // Pass updated user data
   };
 
-  const handlePressOut = (scale) => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
-  };
+  // Animation handlers
+  const handlePressIn = (scale) => { Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start(); };
+  const handlePressOut = (scale) => { Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start(); };
 
+  // Render UI
   return (
     <View style={[styles.container, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
-      <Header title="Create Provider Profile" toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
+      <Header title={isEditMode ? "Edit Provider Profile" : "Create Provider Profile"} toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
       <View style={styles.content}>
-        <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Create Provider Profile</Text>
-        <TextInput
-          style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-          value={companyName}
-          onChangeText={setCompanyName}
-          placeholder="Company Name"
-          placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-        />
-        <TextInput
-          style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-          value={hrName}
-          onChangeText={setHrName}
-          placeholder="HR Name"
-          placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-        />
-        <TextInput
-          style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-          value={hrWhatsappNumber}
-          onChangeText={setHrWhatsappNumber}
-          placeholder="HR WhatsApp Number"
-          placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-        />
-        <TextInput
-          style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-          value={email}
-          onChangeText={setEmail}
-          placeholder="Email"
-          placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-        />
-        <TouchableOpacity
-          style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-          onPress={handleSaveProfile}
-          onPressIn={() => handlePressIn(saveScale)}
-          onPressOut={() => handlePressOut(saveScale)}
-          activeOpacity={0.8}
-        >
-          <Animated.View style={[styles.buttonInner, { transform: [{ scale: saveScale }] }]}>
-            <Text style={styles.buttonText}>Save Profile</Text>
-          </Animated.View>
-        </TouchableOpacity>
+        <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
+          {isEditMode ? "Update Your Profile" : "Set Up Your Provider Profile"}
+        </Text>
+        {!profileCreated ? (
+          <>
+            <TextInput
+              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+              value={formData.companyName}
+              onChangeText={(text) => handleChange('companyName', text)}
+              placeholder="Company Name"
+              placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+            />
+            <TextInput
+              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+              value={formData.hrName}
+              onChangeText={(text) => handleChange('hrName', text)}
+              placeholder="HR Name"
+              placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+            />
+            <TextInput
+              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+              value={formData.hrWhatsappNumber}
+              onChangeText={(text) => handleChange('hrWhatsappNumber', text)}
+              placeholder="HR WhatsApp Number"
+              placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+            />
+            <TextInput
+              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+              value={formData.email}
+              onChangeText={(text) => handleChange('email', text)}
+              placeholder="Email"
+              placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+            />
+            <TouchableOpacity
+              style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+              onPress={handleSubmitProfile}
+              onPressIn={() => handlePressIn(submitScale)}
+              onPressOut={() => handlePressOut(submitScale)}
+              activeOpacity={0.8}
+            >
+              <Animated.View style={[styles.buttonInner, { transform: [{ scale: submitScale }] }]}>
+                <Text style={styles.buttonText}>Save Profile</Text>
+              </Animated.View>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity
+            style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+            onPress={handleGoToDashboard}
+            onPressIn={() => handlePressIn(dashboardScale)}
+            onPressOut={() => handlePressOut(dashboardScale)}
+            activeOpacity={0.8}
+          >
+            <Animated.View style={[styles.buttonInner, { transform: [{ scale: dashboardScale }] }]}>
+              <Text style={styles.buttonText}>Go to Dashboard</Text>
+            </Animated.View>
+          </TouchableOpacity>
+        )}
         {message && <Text style={[styles.message, isDarkMode ? styles.darkText : styles.lightText]}>{message}</Text>}
       </View>
       <Footer isDarkMode={isDarkMode} />
@@ -92,34 +137,24 @@ const ProviderProfile = ({ route, isDarkMode, toggleDarkMode }) => {
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
   container: { flex: 1 },
   lightContainer: { backgroundColor: '#fff' },
   darkContainer: { backgroundColor: '#111' },
   content: { flex: 1, justifyContent: 'center', padding: 16 },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
-  input: { borderWidth: 1, padding: 10, marginBottom: 20, borderRadius: 5 },
+  input: { borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5 },
   lightInput: { borderColor: '#ccc', color: '#000' },
   darkInput: { borderColor: '#555', color: '#ddd', backgroundColor: '#333' },
-  button: {
-    borderRadius: 25,
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    marginBottom: 20,
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-  },
+  button: { paddingVertical: 15, paddingHorizontal: 30, borderRadius: 25, alignItems: 'center', marginBottom: 10 },
   lightButton: { backgroundColor: '#007AFF' },
   darkButton: { backgroundColor: '#005BB5' },
   buttonInner: { padding: 5 },
-  buttonText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   message: { marginTop: 10, textAlign: 'center' },
   lightText: { color: '#000' },
-  darkText: { color: '#ddd' },
+  darkText: { color: '#ddd' }
 });
 
 export default ProviderProfile;

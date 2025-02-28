@@ -1,4 +1,4 @@
-// backend/controllers/authController.js
+// O:\JobConnector\backend\controllers\authController.js
 const nodemailer = require('nodemailer');
 const twilio = require('twilio');
 const JobSeeker = require('../models/JobSeeker');
@@ -9,10 +9,7 @@ const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TO
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER, // balmukund.ahirwar@opticosolutions.com
-    pass: process.env.EMAIL_PASS, // Your App Password placeholder
-  },
+  auth: { user: 'rajvardhant563@gmail.com', pass: 'woyo svyv bzux xyjq' },
 });
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -21,7 +18,7 @@ const sendWhatsAppOTP = async (whatsappNumber, otp) => {
   try {
     await client.messages.create({
       body: `Your Job Connector OTP is: ${otp}`,
-      from: process.env.TWILIO_PHONE_NUMBER,
+      from: 'whatsapp:+14155238886', // Twilio sandbox number for WhatsApp
       to: `whatsapp:${whatsappNumber}`,
     });
     console.log(`WhatsApp OTP sent to ${whatsappNumber}`);
@@ -34,9 +31,9 @@ const sendWhatsAppOTP = async (whatsappNumber, otp) => {
 const sendEmailOTP = async (email, otp) => {
   try {
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: 'rajvardhant563@gmail.com',
       to: email,
-      subject: 'Job Connector OTP',
+      subject: 'Your OTP for JobConnector',
       text: `Your OTP is: ${otp}`,
     });
     console.log(`Email OTP sent to ${email}`);
@@ -118,6 +115,7 @@ exports.verifyOTP = async (req, res) => {
         message: 'Bypass successful',
         user,
         isNewUser,
+        success: true,
       });
     }
 
@@ -130,6 +128,7 @@ exports.verifyOTP = async (req, res) => {
         message: 'OTP verification successful',
         user,
         isNewUser,
+        success: true,
       });
     } else {
       return res.status(400).json({ message: 'Invalid OTP' });

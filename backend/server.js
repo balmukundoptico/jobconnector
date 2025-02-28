@@ -1,39 +1,42 @@
-// backend/server.js
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const multer = require('multer');
+// O:\JobConnector\backend\server.js
+const express = require('express'); // Express framework
+const mongoose = require('mongoose'); // MongoDB ORM
+const cors = require('cors'); // Enable CORS for frontend
+const dotenv = require('dotenv'); // Load environment variables
+const multer = require('multer'); // File upload middleware
 
-dotenv.config();
+dotenv.config(); // Load .env file
 
-const app = express();
+const app = express(); // Initialize Express app
+const upload = multer({ dest: 'uploads/' }); // Configure multer for file uploads
 
-const upload = multer({ dest: 'uploads/' });
+// Middleware
+app.use(express.json()); // Parse JSON request bodies
+app.use(cors()); // Allow cross-origin requests
 
-app.use(express.json());
-app.use(cors());
-
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+// MongoDB connection using provided URI
+mongoose.connect('mongodb+srv://rajvardhant563:LqiFS8i6SUuT4gWK@cluster0.bv5cc3v.mongodb.net/JobPortalDB', {
+  useNewUrlParser: true, // Use new URL parser
+  useUnifiedTopology: true, // Use new topology engine
 })
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.log('MongoDB connection error:', err));
+  .then(() => console.log('MongoDB connected')) // Log success
+  .catch((err) => console.log('MongoDB connection error:', err)); // Log errors
 
+// Root route
 app.get('/', (req, res) => {
-  res.send('Job Connector Backend is running');
+  res.send('Job Connector Backend is running'); // Simple health check
 });
 
-const authRoutes = require('./routes/authRoutes');
-const profileRoutes = require('./routes/profileRoutes');
-const jobRoutes = require('./routes/jobRoutes');
+// Import and mount routes
+const authRoutes = require('./routes/authRoutes'); // Authentication routes
+const profileRoutes = require('./routes/profileRoutes'); // Profile routes
+const jobRoutes = require('./routes/jobRoutes'); // Job routes
 
-app.use('/api/auth', authRoutes);
-app.use('/api/profile', profileRoutes);
-app.use('/api/jobs', jobRoutes);
+app.use('/api/auth', authRoutes); // Mount auth routes
+app.use('/api/profile', profileRoutes); // Mount profile routes
+app.use('/api/jobs', jobRoutes); // Mount job routes
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5000; // Use env port or default to 5000
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`); // Log server start
 });
