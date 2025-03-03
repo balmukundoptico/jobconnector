@@ -1,25 +1,20 @@
 // O:\JobConnector\mobileapp\pages\Register.js
-import React, { useState } from 'react'; // React core
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native'; // RN components
-import { useNavigation } from '@react-navigation/native'; // Navigation hook
-import { requestOTP, verifyOTP } from '../utils/api'; // API functions
-import Header from '../components/Header'; // Reusable header
-import Footer from '../components/Footer'; // Reusable footer
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { requestOTP, verifyOTP, getProfile } from '../utils/api';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
-// Register component with live OTP
 const Register = ({ isDarkMode, toggleDarkMode }) => {
-  const [contact, setContact] = useState(''); // WhatsApp or email input
-  const [otp, setOtp] = useState(''); // OTP input
-  const [message, setMessage] = useState(''); // Message display
-  const [role, setRole] = useState(null); // Role selection
-  const [otpSent, setOtpSent] = useState(false); // Tracks OTP request
-  const navigation = useNavigation(); // Navigation instance
-  const [seekerScale] = useState(new Animated.Value(1)); // Animation scales
-  const [providerScale] = useState(new Animated.Value(1));
-  const [registerScale] = useState(new Animated.Value(1));
-  const [verifyScale] = useState(new Animated.Value(1));
+  const navigation = useNavigation();
+  const [contact, setContact] = useState('');
+  const [message, setMessage] = useState('');
+  const [role, setRole] = useState(null);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [serverOtp, setServerOtp] = useState('');
 
-  // Handle requesting OTP
   const handleRequestOTP = async () => {
     if (!contact) {
       setMessage('Please enter a WhatsApp number or email');
@@ -32,15 +27,17 @@ const Register = ({ isDarkMode, toggleDarkMode }) => {
     try {
       const isEmail = contact.includes('@');
       const payload = isEmail ? { email: contact, role, loginRequest: false } : { whatsappNumber: contact, role, loginRequest: false };
-      const response = await requestOTP(payload); // Live backend call
-      setMessage(response.data.message); // Show message
-      setOtpSent(true); // Mark OTP sent
+      console.log('Request OTP Payload:', payload);
+      const response = await requestOTP(payload);
+      setServerOtp(response.data.serverOtp);
+      setMessage(response.data.message);
+      setOtpSent(true);
     } catch (error) {
+      console.error('OTP Request Error:', error.response?.data || error.message);
       setMessage(error.response?.data?.message || 'Error sending OTP');
     }
   };
 
-  // Handle verifying OTP
   const handleVerifyOTP = async () => {
     if (!otp) {
       setMessage('Please enter the OTP');
@@ -51,126 +48,191 @@ const Register = ({ isDarkMode, toggleDarkMode }) => {
       const payload = {
         ...(isEmail ? { email: contact } : { whatsappNumber: contact }),
         otp,
+        serverOtp,
         role,
         bypass: false,
       };
-      const response = await verifyOTP(payload); // Live backend call
-      setMessage(response.data.message); // Show message
-      if (response.data.success) {
-        navigation.navigate(`${role}-profile`, { contact, isEmail }); // Navigate to profile creation
+      console.log('Verify OTP Payload:', payload);
+      const response = await verifyOTP(payload);
+      setMessage(response.data.message);
+
+      if (response.data.message === 'OTP verification successful') {
+        navigation.navigate(`${role === 'seeker' ? 'SeekerProfile' : 'ProviderProfile'}`, { contact, isEmail });
       }
     } catch (error) {
+      console.error('OTP Verify Error:', error.response?.data || error.message);
       setMessage(error.response?.data?.message || 'Error verifying OTP');
     }
   };
 
-  // Animation handlers
-  const handlePressIn = (scale) => { Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start(); };
-  const handlePressOut = (scale) => { Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start(); };
+  const handleBypassOTP = async () => {
+    if (!contact) {
+      setMessage('Please enter a WhatsApp number or email');
+      return;
+    }
+    if (!role) {
+      setMessage('Please select a role');
+      return;
+    }
+    try {
+      const isEmail = contact.includes('@');
+      const payload = {
+        ...(isEmail ? { email: contact } : { whatsappNumber: contact }),
+        otp: 'bypass',
+        role,
+        bypass: true,
+      };
+      console.log('Bypass OTP Payload:', payload);
+      const response = await verifyOTP(payload);
+      console.log('Bypass OTP Response:', response.data);
 
-  // Render UI
+      if (response.data.isNewUser) {
+        // New user: redirect to profile creation
+        setMessage('New user detected. Redirecting to profile creation...');
+        navigation.navigate(`${role === 'seeker' ? 'SeekerProfile' : 'ProviderProfile'}`, { contact, isEmail });
+      } else {
+        // Old user: fetch profile and redirect to dashboard
+        const profileResponse = await getProfile({ role, [isEmail ? 'email' : 'whatsappNumber']: contact });
+        console.log('Profile Response:', profileResponse.data);
+        setMessage('Profile exists. Redirecting to dashboard...');
+        setTimeout(() => navigation.navigate(`${role === 'seeker' ? 'SeekerDashboard' : 'ProviderDashboard'}`, { user: profileResponse.data }), 2000);
+      }
+    } catch (error) {
+      console.error('Bypass OTP Error:', error.response?.data || error.message);
+      setMessage(error.response?.data?.message || 'Error bypassing OTP');
+    }
+  };
+
   return (
     <View style={[styles.container, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
       <Header title="Register" toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
-      <View style={styles.content}>
-        <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
-          Register as Job Seeker or Job Provider
-        </Text>
-        <TextInput
-          style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-          value={contact}
-          onChangeText={setContact}
-          placeholder="WhatsApp number or email"
-          placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-          editable={!otpSent}
-        />
-        <View style={styles.roleContainer}>
-          <TouchableOpacity
-            style={[styles.roleButton, role === 'seeker' && styles.selectedRole, isDarkMode ? styles.darkButton : styles.lightButton]}
-            onPress={() => setRole('seeker')}
-            onPressIn={() => handlePressIn(seekerScale)}
-            onPressOut={() => handlePressOut(seekerScale)}
-            activeOpacity={0.8}
-          >
-            <Animated.View style={[styles.buttonInner, { transform: [{ scale: seekerScale }] }]}>
-              <Text style={styles.buttonText}>Job Seeker</Text>
-            </Animated.View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.roleButton, role === 'provider' && styles.selectedRole, isDarkMode ? styles.darkButton : styles.lightButton]}
-            onPress={() => setRole('provider')}
-            onPressIn={() => handlePressIn(providerScale)}
-            onPressOut={() => handlePressOut(providerScale)}
-            activeOpacity={0.8}
-          >
-            <Animated.View style={[styles.buttonInner, { transform: [{ scale: providerScale }] }]}>
-              <Text style={styles.buttonText}>Job Provider</Text>
-            </Animated.View>
-          </TouchableOpacity>
-        </View>
-        {otpSent ? (
-          <>
-            <TextInput
-              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-              value={otp}
-              onChangeText={setOtp}
-              placeholder="Enter OTP"
-              placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-              keyboardType="numeric"
-            />
+      <View style={styles.main}>
+        <View style={[styles.card, isDarkMode ? styles.darkCard : styles.lightCard]}>
+          <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
+            Register as Job Seeker or Job Provider
+          </Text>
+          <TextInput
+            style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+            value={contact}
+            onChangeText={setContact}
+            placeholder="WhatsApp number or email"
+            placeholderTextColor={isDarkMode ? '#D1D5DB' : '#9CA3AF'}
+            editable={!otpSent}
+          />
+          <View style={styles.roleContainer}>
             <TouchableOpacity
-              style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-              onPress={handleVerifyOTP}
-              onPressIn={() => handlePressIn(verifyScale)}
-              onPressOut={() => handlePressOut(verifyScale)}
-              activeOpacity={0.8}
+              style={[
+                styles.roleButton,
+                role === 'seeker' ? styles.seekerButton : (isDarkMode ? styles.darkRoleButton : styles.lightRoleButton)
+              ]}
+              onPress={() => setRole('seeker')}
             >
-              <Animated.View style={[styles.buttonInner, { transform: [{ scale: verifyScale }] }]}>
-                <Text style={styles.buttonText}>Verify OTP</Text>
-              </Animated.View>
+              <Text style={styles.roleButtonText}>Job Seeker</Text>
             </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity
-            style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-            onPress={handleRequestOTP}
-            onPressIn={() => handlePressIn(registerScale)}
-            onPressOut={() => handlePressOut(registerScale)}
-            activeOpacity={0.8}
-          >
-            <Animated.View style={[styles.buttonInner, { transform: [{ scale: registerScale }] }]}>
-              <Text style={styles.buttonText}>Register</Text>
-            </Animated.View>
-          </TouchableOpacity>
-        )}
-        {message && <Text style={[styles.message, isDarkMode ? styles.darkText : styles.lightText]}>{message}</Text>}
+            <TouchableOpacity
+              style={[
+                styles.roleButton,
+                role === 'provider' ? styles.providerButton : (isDarkMode ? styles.darkRoleButton : styles.lightRoleButton)
+              ]}
+              onPress={() => setRole('provider')}
+            >
+              <Text style={styles.roleButtonText}>Job Provider</Text>
+            </TouchableOpacity>
+          </View>
+          {!otpSent ? (
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.submitButton, isDarkMode ? styles.darkSubmitButton : styles.lightSubmitButton]}
+                onPress={handleRequestOTP}
+              >
+                <Text style={styles.submitButtonText}>Get OTP</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.submitButton, styles.bypassButton]}
+                onPress={handleBypassOTP}
+              >
+                <Text style={styles.submitButtonText}>Bypass OTP</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.otpContainer}>
+              <TextInput
+                style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                value={otp}
+                onChangeText={setOtp}
+                placeholder="Enter OTP"
+                placeholderTextColor={isDarkMode ? '#D1D5DB' : '#9CA3AF'}
+                keyboardType="numeric"
+              />
+              <TouchableOpacity
+                style={[styles.submitButton, styles.verifyButton]}
+                onPress={handleVerifyOTP}
+              >
+                <Text style={styles.submitButtonText}>Verify OTP</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {message ? (
+            <Text style={[styles.message, isDarkMode ? styles.darkMessage : styles.lightMessage]}>
+              {message}
+            </Text>
+          ) : null}
+        </View>
       </View>
       <Footer isDarkMode={isDarkMode} />
     </View>
   );
 };
 
-// Styles
+// Styles adapted from Tailwind CSS
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  lightContainer: { backgroundColor: '#fff' },
-  darkContainer: { backgroundColor: '#111' },
-  content: { flex: 1, justifyContent: 'center', padding: 16 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
-  input: { borderWidth: 1, padding: 10, marginBottom: 20, borderRadius: 5 },
-  lightInput: { borderColor: '#ccc', color: '#000' },
-  darkInput: { borderColor: '#555', color: '#ddd', backgroundColor: '#333' },
-  roleContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 20 },
-  roleButton: { padding: 10, borderRadius: 5 },
-  selectedRole: { backgroundColor: '#003F87' },
-  button: { paddingVertical: 15, paddingHorizontal: 30, borderRadius: 25, alignItems: 'center', marginBottom: 10 },
-  lightButton: { backgroundColor: '#007AFF' },
-  darkButton: { backgroundColor: '#005BB5' },
-  buttonInner: { padding: 5 },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  message: { marginTop: 10, textAlign: 'center' },
-  lightText: { color: '#000' },
-  darkText: { color: '#ddd' }
+  lightContainer: { backgroundColor: '#FFFFFF' },
+  darkContainer: { backgroundColor: '#1F2937' },
+  main: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  card: {
+    padding: 24,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '90%',
+    alignItems: 'center',
+    gap: 24,
+  },
+  lightCard: { backgroundColor: '#FFFFFF' },
+  darkCard: { backgroundColor: '#1F2937' },
+  title: { fontSize: 20, fontWeight: '600', textAlign: 'center' },
+  input: {
+    width: '100%',
+    padding: 8,
+    borderWidth: 1,
+    borderRadius: 4,
+  },
+  lightInput: { borderColor: '#D1D5DB', color: '#000000', backgroundColor: '#F9FAFB' },
+  darkInput: { borderColor: '#4B5563', color: '#F9FAFB', backgroundColor: '#374151' },
+  roleContainer: { flexDirection: 'row', gap: 16, justifyContent: 'center' },
+  roleButton: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 4 },
+  lightRoleButton: { backgroundColor: '#E5E7EB' },
+  darkRoleButton: { backgroundColor: '#4B5563' },
+  seekerButton: { backgroundColor: '#3B82F6' },
+  providerButton: { backgroundColor: '#10B981' },
+  roleButtonText: { color: '#FFFFFF', fontSize: 16 },
+  buttonContainer: { width: '100%', gap: 16 },
+  otpContainer: { width: '100%', gap: 16 },
+  submitButton: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 4, width: '100%', alignItems: 'center' },
+  lightSubmitButton: { backgroundColor: '#3B82F6' },
+  darkSubmitButton: { backgroundColor: '#3B82F6' },
+  verifyButton: { backgroundColor: '#10B981' },
+  bypassButton: { backgroundColor: '#6B7280' },
+  submitButtonText: { color: '#FFFFFF', fontSize: 16 },
+  message: { marginTop: 0, textAlign: 'center' },
+  lightMessage: { color: '#4B5563' },
+  darkMessage: { color: '#D1D5DB' },
+  lightText: { color: '#1F2937' },
+  darkText: { color: '#F9FAFB' }
 });
 
 export default Register;

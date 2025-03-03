@@ -1,83 +1,39 @@
 // O:\JobConnector\mobileapp\pages\Home.js
-import React, { useState } from 'react'; // React core
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native'; // RN components
-import { useNavigation } from '@react-navigation/native'; // Hook for navigation
-import Header from '../components/Header'; // Reusable header component
-import Footer from '../components/Footer'; // Reusable footer component
+import React from 'react'; // React core
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native'; // RN components
+import { useNavigation } from '@react-navigation/native'; // Navigation hook
+import Header from '../components/Header'; // Reusable header
+import Footer from '../components/Footer'; // Reusable footer
 
-// Home component as the app's entry screen
+// Home component for mobile app
 const Home = ({ isDarkMode, toggleDarkMode }) => {
-  const navigation = useNavigation(); // Navigation instance for screen transitions
-  const [seekerScale] = useState(new Animated.Value(1)); // Animation scale for Job Seeker button
-  const [providerScale] = useState(new Animated.Value(1)); // Animation scale for Job Provider button
-  const [adminScale] = useState(new Animated.Value(1)); // Animation scale for Admin button
-  const [registerScale] = useState(new Animated.Value(1)); // Animation scale for Register button
+  const navigation = useNavigation();
 
-  // Handle role selection and navigate to AuthForm
-  const handleRoleSelect = (role) => {
-    navigation.navigate('AuthForm', { role }); // Navigate to AuthForm with selected role
-  };
-
-  // Animation handlers for button press effects
-  const handlePressIn = (scale) => { Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start(); };
-  const handlePressOut = (scale) => { Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start(); };
-
-  // Render the UI
   return (
     <View style={[styles.container, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
       <Header title="JobConnector Mobile" toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
-      <View style={styles.content}>
-        <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
-          Welcome to JobConnector
-        </Text>
-        <Text style={[styles.subtitle, isDarkMode ? styles.darkText : styles.lightText]}>
-          Find or Provide Jobs Easily
-        </Text>
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-            onPress={() => handleRoleSelect('seeker')}
-            onPressIn={() => handlePressIn(seekerScale)}
-            onPressOut={() => handlePressOut(seekerScale)}
-            activeOpacity={0.8}
-          >
-            <Animated.View style={[styles.buttonInner, { transform: [{ scale: seekerScale }] }]}>
+      <View style={styles.main}>
+        <View style={[styles.card, isDarkMode ? styles.darkCard : styles.lightCard]}>
+          <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
+            Welcome to Job Connector
+          </Text>
+          <Text style={[styles.subtitle, isDarkMode ? styles.darkText : styles.lightText]}>
+            Find your dream job or hire the perfect candidate!
+          </Text>
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity
+              style={styles.seekerButton}
+              onPress={() => navigation.navigate('AuthForm', { role: 'seeker' })}
+            >
               <Text style={styles.buttonText}>Job Seeker</Text>
-            </Animated.View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-            onPress={() => handleRoleSelect('provider')}
-            onPressIn={() => handlePressIn(providerScale)}
-            onPressOut={() => handlePressOut(providerScale)}
-            activeOpacity={0.8}
-          >
-            <Animated.View style={[styles.buttonInner, { transform: [{ scale: providerScale }] }]}>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.providerButton}
+              onPress={() => navigation.navigate('AuthForm', { role: 'provider' })}
+            >
               <Text style={styles.buttonText}>Job Provider</Text>
-            </Animated.View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-            onPress={() => handleRoleSelect('admin')}
-            onPressIn={() => handlePressIn(adminScale)}
-            onPressOut={() => handlePressOut(adminScale)}
-            activeOpacity={0.8}
-          >
-            <Animated.View style={[styles.buttonInner, { transform: [{ scale: adminScale }] }]}>
-              <Text style={styles.buttonText}>Admin</Text>
-            </Animated.View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-            onPress={() => navigation.navigate('Register')}
-            onPressIn={() => handlePressIn(registerScale)}
-            onPressOut={() => handlePressOut(registerScale)}
-            activeOpacity={0.8}
-          >
-            <Animated.View style={[styles.buttonInner, { transform: [{ scale: registerScale }] }]}>
-              <Text style={styles.buttonText}>Register</Text>
-            </Animated.View>
-          </TouchableOpacity>
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
       <Footer isDarkMode={isDarkMode} />
@@ -85,22 +41,34 @@ const Home = ({ isDarkMode, toggleDarkMode }) => {
   );
 };
 
-// Styles
+// Styles adapted from Tailwind CSS
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  lightContainer: { backgroundColor: '#fff' },
-  darkContainer: { backgroundColor: '#111' },
-  content: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
-  subtitle: { fontSize: 16, marginBottom: 40, textAlign: 'center' },
-  buttonContainer: { flexDirection: 'column', width: '80%', gap: 20 },
-  button: { borderRadius: 25, paddingVertical: 15, paddingHorizontal: 30, alignItems: 'center', elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.3, shadowRadius: 3 },
-  lightButton: { backgroundColor: '#007AFF' },
-  darkButton: { backgroundColor: '#005BB5' },
-  buttonInner: { padding: 5 },
-  buttonText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
-  lightText: { color: '#000' },
-  darkText: { color: '#ddd' }
+  lightContainer: { backgroundColor: '#F3F4F6' }, // bg-gray-100
+  darkContainer: { backgroundColor: '#111827' }, // dark:bg-gray-900
+  main: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 }, // flex-grow, items-center, justify-center, p-4
+  card: {
+    padding: 24, // p-6
+    borderRadius: 8, // rounded-lg
+    shadowColor: '#000', // shadow-md
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '100%',
+    maxWidth: 448, // max-w-md
+    alignItems: 'center',
+  },
+  lightCard: { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB', borderWidth: 1 }, // bg-white, border-gray-200
+  darkCard: { backgroundColor: '#1F2937', borderColor: '#374151', borderWidth: 1 }, // dark:bg-gray-800, dark:border-gray-700
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 16, textAlign: 'center' }, // text-3xl, font-bold, mb-4
+  subtitle: { fontSize: 16, marginBottom: 24, textAlign: 'center' }, // mb-6
+  buttonContainer: { width: '100%', gap: 16 }, // space-y-4
+  seekerButton: { backgroundColor: '#3B82F6', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 4, alignItems: 'center' }, // bg-blue-500, p-3, rounded
+  providerButton: { backgroundColor: '#10B981', paddingVertical: 12, paddingHorizontal: 16, borderRadius: 4, alignItems: 'center' }, // bg-green-500, p-3, rounded
+  buttonText: { color: '#FFFFFF', fontSize: 16, fontWeight: 'bold' }, // text-white
+  lightText: { color: '#111827' }, // text-gray-900
+  darkText: { color: '#F9FAFB' }, // dark:text-white
 });
 
 export default Home;

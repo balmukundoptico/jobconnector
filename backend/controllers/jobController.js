@@ -7,7 +7,7 @@ const xlsx = require('xlsx');
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
-  auth: { user: 'rajvardhant563@gmail.com', pass: 'woyo svyv bzux xyjq' },
+  auth: { user: 'krishnabmk96@gmail.com', pass: 'bucg kaci cxmu luam' },
 });
 
 exports.postJob = async (req, res) => {

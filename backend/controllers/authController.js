@@ -9,7 +9,7 @@ const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TO
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
-  auth: { user: 'rajvardhant563@gmail.com', pass: 'woyo svyv bzux xyjq' },
+  auth: { user: 'krishnabmk96@gmail.com', pass: 'bucg kaci cxmu luam' },
 });
 
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
