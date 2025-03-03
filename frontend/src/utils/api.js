@@ -3,7 +3,7 @@ import axios from 'axios';
 
 // API instance with updated base URL pointing to the new Render backend
 const api = axios.create({
-  baseURL: 'http://192.168.31.124:5000/api', // Updated from http://localhost:5000/api
+  baseURL: 'https://jobconnector-backend.onrender.com/api', // Updated from http://localhost:5000/api
   headers: { 'Content-Type': 'application/json' },
 });
 
