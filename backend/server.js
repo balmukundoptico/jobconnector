@@ -15,7 +15,7 @@ app.use(express.json()); // Parse JSON request bodies
 app.use(cors()); // Allow cross-origin requests
 
 // MongoDB connection using provided URI
-mongoose.connect('mongodb+srv://jobconnectoruser:lets12help@job-connector.tfuff.mongodb.net/job-connector?retryWrites=true&w=majority', {
+mongoose.connect('mongodb://localhost:27017/job-connector', {
   useNewUrlParser: true, // Use new URL parser
   useUnifiedTopology: true, // Use new topology engine
 })
