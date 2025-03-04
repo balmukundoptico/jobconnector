@@ -18,7 +18,7 @@ const sendWhatsAppOTP = async (whatsappNumber, otp) => {
   try {
     await client.messages.create({
       body: `Your Job Connector OTP is: ${otp}`,
-      from: 'whatsapp:+14155238886', // Twilio sandbox number for WhatsApp
+      from: 'whatsapp:+917000534581', // Twilio sandbox number for WhatsApp
       to: `whatsapp:${whatsappNumber}`,
     });
     console.log(`WhatsApp OTP sent to ${whatsappNumber}`);
@@ -31,7 +31,7 @@ const sendWhatsAppOTP = async (whatsappNumber, otp) => {
 const sendEmailOTP = async (email, otp) => {
   try {
     await transporter.sendMail({
-      from: 'rajvardhant563@gmail.com',
+      from: 'krishnabmk96@gmail.com',
       to: email,
       subject: 'Your OTP for JobConnector',
       text: `Your OTP is: ${otp}`,

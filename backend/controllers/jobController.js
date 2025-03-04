@@ -138,7 +138,7 @@ exports.sendMassEmail = async (req, res) => {
     const emailPromises = seekers.map(seeker => {
       if (seeker.email) {
         return transporter.sendMail({
-          from: 'rajvardhant563@gmail.com',
+          from: 'krishnabmk96@gmail.com',
           to: seeker.email,
           subject,
           text: body,
