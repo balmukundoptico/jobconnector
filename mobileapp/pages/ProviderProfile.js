@@ -1,12 +1,11 @@
 // O:\JobConnector\mobileapp\pages\ProviderProfile.js
-import React, { useState, useEffect } from 'react'; // React core
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native'; // RN components
-import { useNavigation } from '@react-navigation/native'; // Navigation hook
-import { createProviderProfile, updateProviderProfile } from '../utils/api'; // API functions
-import Header from '../components/Header'; // Reusable header
-import Footer from '../components/Footer'; // Reusable footer
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, ScrollView } from 'react-native'; // Added ScrollView
+import { useNavigation } from '@react-navigation/native';
+import { createProviderProfile, updateProviderProfile } from '../utils/api';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
 
-// ProviderProfile component with full fields and live backend
 const ProviderProfile = ({ isDarkMode, toggleDarkMode, route }) => {
   const [formData, setFormData] = useState({
     companyName: '',
@@ -14,14 +13,13 @@ const ProviderProfile = ({ isDarkMode, toggleDarkMode, route }) => {
     hrWhatsappNumber: route?.params?.contact && !route?.params?.isEmail ? route.params.contact : '',
     email: route?.params?.contact && route?.params?.isEmail ? route.params.contact : '',
   });
-  const [message, setMessage] = useState(''); // Success/error message
-  const [profileCreated, setProfileCreated] = useState(false); // Tracks if profile is saved
-  const [isEditMode, setIsEditMode] = useState(!!route?.params?.user); // Edit mode if user exists
-  const navigation = useNavigation(); // Navigation instance
-  const [submitScale] = useState(new Animated.Value(1)); // Animation scale for submit button
-  const [dashboardScale] = useState(new Animated.Value(1)); // Animation scale for dashboard button
+  const [message, setMessage] = useState('');
+  const [profileCreated, setProfileCreated] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(!!route?.params?.user);
+  const navigation = useNavigation();
+  const [submitScale] = useState(new Animated.Value(1));
+  const [dashboardScale] = useState(new Animated.Value(1));
 
-  // Fetch existing profile if in edit mode
   useEffect(() => {
     if (isEditMode && route?.params?.user) {
       setFormData({
@@ -33,12 +31,10 @@ const ProviderProfile = ({ isDarkMode, toggleDarkMode, route }) => {
     }
   }, [route, isEditMode]);
 
-  // Handle form input changes
   const handleChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle submitting the profile
   const handleSubmitProfile = async () => {
     if (!formData.companyName || !formData.hrName) {
       setMessage('Please fill in company name and HR name');
@@ -47,102 +43,101 @@ const ProviderProfile = ({ isDarkMode, toggleDarkMode, route }) => {
     try {
       let response;
       if (isEditMode) {
-        response = await updateProviderProfile({ ...formData, _id: route.params.user._id }); // Update existing profile
+        response = await updateProviderProfile({ ...formData, _id: route.params.user._id });
       } else {
-        response = await createProviderProfile(formData); // Create new profile
+        response = await createProviderProfile(formData);
       }
-      setMessage(response.data.message); // Show success message
-      setProfileCreated(true); // Mark profile as created/updated
+      setMessage(response.data.message);
+      setProfileCreated(true);
     } catch (error) {
-      setMessage('Error saving profile: ' + error.message); // Show error
+      setMessage('Error saving profile: ' + error.message);
     }
   };
 
-  // Handle navigating to ProviderDashboard
   const handleGoToDashboard = () => {
-    navigation.navigate('ProviderDashboard', { user: { ...route.params.user, ...formData } }); // Pass updated user data
+    navigation.navigate('ProviderDashboard', { user: { ...route.params.user, ...formData } });
   };
 
-  // Animation handlers
   const handlePressIn = (scale) => { Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start(); };
   const handlePressOut = (scale) => { Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start(); };
 
-  // Render UI
   return (
     <View style={[styles.container, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
       <Header title={isEditMode ? "Edit Provider Profile" : "Create Provider Profile"} toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
-      <View style={styles.content}>
-        <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
-          {isEditMode ? "Update Your Profile" : "Set Up Your Provider Profile"}
-        </Text>
-        {!profileCreated ? (
-          <>
-            <TextInput
-              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-              value={formData.companyName}
-              onChangeText={(text) => handleChange('companyName', text)}
-              placeholder="Company Name"
-              placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-            />
-            <TextInput
-              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-              value={formData.hrName}
-              onChangeText={(text) => handleChange('hrName', text)}
-              placeholder="HR Name"
-              placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-            />
-            <TextInput
-              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-              value={formData.hrWhatsappNumber}
-              onChangeText={(text) => handleChange('hrWhatsappNumber', text)}
-              placeholder="HR WhatsApp Number"
-              placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-            />
-            <TextInput
-              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-              value={formData.email}
-              onChangeText={(text) => handleChange('email', text)}
-              placeholder="Email"
-              placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-            />
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.content}>
+          <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
+            {isEditMode ? "Update Your Profile" : "Set Up Your Provider Profile"}
+          </Text>
+          {!profileCreated ? (
+            <>
+              <TextInput
+                style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                value={formData.companyName}
+                onChangeText={(text) => handleChange('companyName', text)}
+                placeholder="Company Name"
+                placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+              />
+              <TextInput
+                style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                value={formData.hrName}
+                onChangeText={(text) => handleChange('hrName', text)}
+                placeholder="HR Name"
+                placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+              />
+              <TextInput
+                style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                value={formData.hrWhatsappNumber}
+                onChangeText={(text) => handleChange('hrWhatsappNumber', text)}
+                placeholder="HR WhatsApp Number"
+                placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+              />
+              <TextInput
+                style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                value={formData.email}
+                onChangeText={(text) => handleChange('email', text)}
+                placeholder="Email"
+                placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+              />
+              <TouchableOpacity
+                style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+                onPress={handleSubmitProfile}
+                onPressIn={() => handlePressIn(submitScale)}
+                onPressOut={() => handlePressOut(submitScale)}
+                activeOpacity={0.8}
+              >
+                <Animated.View style={[styles.buttonInner, { transform: [{ scale: submitScale }] }]}>
+                  <Text style={styles.buttonText}>Save Profile</Text>
+                </Animated.View>
+              </TouchableOpacity>
+            </>
+          ) : (
             <TouchableOpacity
               style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-              onPress={handleSubmitProfile}
-              onPressIn={() => handlePressIn(submitScale)}
-              onPressOut={() => handlePressOut(submitScale)}
+              onPress={handleGoToDashboard}
+              onPressIn={() => handlePressIn(dashboardScale)}
+              onPressOut={() => handlePressOut(dashboardScale)}
               activeOpacity={0.8}
             >
-              <Animated.View style={[styles.buttonInner, { transform: [{ scale: submitScale }] }]}>
-                <Text style={styles.buttonText}>Save Profile</Text>
+              <Animated.View style={[styles.buttonInner, { transform: [{ scale: dashboardScale }] }]}>
+                <Text style={styles.buttonText}>Go to Dashboard</Text>
               </Animated.View>
             </TouchableOpacity>
-          </>
-        ) : (
-          <TouchableOpacity
-            style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-            onPress={handleGoToDashboard}
-            onPressIn={() => handlePressIn(dashboardScale)}
-            onPressOut={() => handlePressOut(dashboardScale)}
-            activeOpacity={0.8}
-          >
-            <Animated.View style={[styles.buttonInner, { transform: [{ scale: dashboardScale }] }]}>
-              <Text style={styles.buttonText}>Go to Dashboard</Text>
-            </Animated.View>
-          </TouchableOpacity>
-        )}
-        {message && <Text style={[styles.message, isDarkMode ? styles.darkText : styles.lightText]}>{message}</Text>}
-      </View>
+          )}
+          {message && <Text style={[styles.message, isDarkMode ? styles.darkText : styles.lightText]}>{message}</Text>}
+        </View>
+      </ScrollView>
       <Footer isDarkMode={isDarkMode} />
     </View>
   );
 };
 
-// Styles
 const styles = StyleSheet.create({
   container: { flex: 1 },
   lightContainer: { backgroundColor: '#fff' },
   darkContainer: { backgroundColor: '#111' },
-  content: { flex: 1, justifyContent: 'center', padding: 16 },
+  scrollContent: { paddingBottom: 60, flexGrow: 1 }, // Updated for scrolling
+  content: { padding: 10, flexGrow: 1 }, // Updated for scrolling
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
   input: { borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5 },
   lightInput: { borderColor: '#ccc', color: '#000' },
