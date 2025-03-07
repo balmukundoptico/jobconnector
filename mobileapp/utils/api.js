@@ -1,9 +1,10 @@
 // O:\JobConnector\mobileapp\utils\api.js
-import axios from 'axios'; // HTTP client
+import axios from 'axios';
 
-// Real API connected to Render backend
+// Real API connected to local backend
 const api = axios.create({
-  baseURL: 'https://jobconnector-backend.onrender.com/api', // LOcal URL
+  // baseURL: 'http://localhost:5000/api', // Local URL
+  baseURL: 'https://jobconnector-backend.onrender.com/api', // Render URL (commented for later use)
   headers: {
     'Content-Type': 'application/json',
   },
@@ -15,9 +16,7 @@ export const verifyOTP = (data) => api.post('/auth/verify-otp', data);
 export const getProfile = (data) => api.get('/profile', { params: data });
 export const createSeekerProfile = (data) => api.post('/profile/seeker', data);
 export const createProviderProfile = (data) => api.post('/profile/provider', data);
-export const updateSeekerProfile = (data) => api.post('/profile/seeker/update', data, {
-  headers: { 'Content-Type': 'multipart/form-data' },
-});
+export const updateSeekerProfile = (data) => api.post('/jobs/update-seeker', data); // Updated endpoint
 export const updateProviderProfile = (data) => api.post('/profile/provider/update', data);
 export const postJob = (data) => api.post('/jobs/post', data);
 export const searchJobs = (data) => api.get('/jobs/search', { params: data });
@@ -34,5 +33,6 @@ export const saveSearch = (data) => api.post('/jobs/save-search', data);
 export const applyToJob = (data) => api.post('/jobs/apply-job', data);
 export const getApplicants = (jobId) => api.get('/jobs/applicants', { params: { jobId } });
 export const getPostedJobs = () => api.get('/jobs/posted');
+export const updateJob = (data) => api.post('/jobs/update-job', data); // Added for job edits
 
-export default api; // Export API instance
+export default api;

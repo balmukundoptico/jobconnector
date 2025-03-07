@@ -88,7 +88,7 @@ exports.applyToJob = async (req, res) => {
 };
 
 exports.getApplicants = async (req, res) => {
-  const { providerId, jobId } = req.params.providerId ? req.params : req.query; // Support both old and new endpoints
+  const { providerId, jobId } = req.params.providerId ? req.params : req.query;
   try {
     const query = jobId ? { _id: jobId } : { postedBy: providerId };
     const jobs = await JobPosting.find(query).populate('applicants.seekerId', 'fullName email whatsappNumber skills experience location resume');
@@ -108,11 +108,11 @@ exports.getApplicants = async (req, res) => {
 };
 
 exports.saveSearch = async (req, res) => {
-  res.json({ message: 'Search saved (placeholder)' }); // Placeholder as per mobile app needs
+  res.json({ message: 'Search saved (placeholder)' });
 };
 
 exports.sendWhatsAppMessage = async (req, res) => {
-  res.json({ message: 'WhatsApp message sent (placeholder)' }); // Placeholder—Twilio not fully implemented
+  res.json({ message: 'WhatsApp message sent (placeholder)' });
 };
 
 exports.getTrendingSkills = async (req, res) => {
@@ -237,5 +237,54 @@ exports.deleteJob = async (req, res) => {
   } catch (error) {
     console.error('Error deleting job:', error);
     res.status(500).json({ message: 'Error deleting job' });
+  }
+};
+
+// New function to update a job
+exports.updateJob = async (req, res) => {
+  const { jobId, jobTitle, skills, skillType, experienceRequired, location, maxCTC, noticePeriod, postedBy } = req.body;
+
+  try {
+    const job = await JobPosting.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+
+    if (jobTitle !== undefined) job.jobTitle = jobTitle;
+    if (skills !== undefined) job.skills = skills; // Expecting an array from frontend
+    if (skillType !== undefined) job.skillType = skillType;
+    if (experienceRequired !== undefined) job.experienceRequired = Number(experienceRequired);
+    if (location !== undefined) job.location = location;
+    if (maxCTC !== undefined) job.maxCTC = Number(maxCTC);
+    if (noticePeriod !== undefined) job.noticePeriod = noticePeriod;
+    if (postedBy !== undefined) job.postedBy = postedBy;
+
+    await job.save();
+    res.json({ message: 'Job updated successfully', job });
+  } catch (error) {
+    console.error('Error updating job:', error);
+    res.status(500).json({ message: 'Error updating job' });
+  }
+};
+
+// New function to update a seeker
+exports.updateSeekerProfile = async (req, res) => {
+  const { _id, fullName, whatsappNumber, email } = req.body;
+
+  try {
+    const seeker = await JobSeeker.findById(_id);
+    if (!seeker) {
+      return res.status(404).json({ message: 'Seeker not found' });
+    }
+
+    if (fullName !== undefined) seeker.fullName = fullName;
+    if (whatsappNumber !== undefined) seeker.whatsappNumber = whatsappNumber;
+    if (email !== undefined) seeker.email = email;
+
+    await seeker.save();
+    res.json({ message: 'Seeker updated successfully', seeker });
+  } catch (error) {
+    console.error('Error updating seeker:', error);
+    res.status(500).json({ message: 'Error updating seeker', error: error.message });
   }
 };

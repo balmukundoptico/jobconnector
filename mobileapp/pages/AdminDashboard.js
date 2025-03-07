@@ -1,9 +1,9 @@
 // O:\JobConnector\mobileapp\pages\AdminDashboard.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Animated, Modal, ScrollView } from 'react-native'; // Added ScrollView
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Animated, Modal, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
-import { getProfile, uploadExcel, searchSeekers, searchJobs, deleteSeeker, deleteJob, updateSeekerProfile, updateProviderProfile } from '../utils/api';
+import { getProfile, uploadExcel, searchSeekers, searchJobs, deleteSeeker, deleteJob, updateSeekerProfile, updateJob } from '../utils/api'; // Updated imports
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -134,6 +134,7 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
       setEditSeeker(null);
     } catch (error) {
       setMessage('Error updating seeker: ' + error.message);
+      console.error('Update seeker error:', error); // Added for debugging
     }
   };
 
@@ -143,12 +144,24 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
 
   const handleSaveJob = async () => {
     try {
-      const response = await updateProviderProfile({ ...editJob, postedBy: editJob.postedBy._id });
+      const payload = {
+        jobId: editJob._id,
+        jobTitle: editJob.jobTitle,
+        skills: editJob.skills,
+        skillType: editJob.skillType,
+        experienceRequired: editJob.experienceRequired,
+        location: editJob.location,
+        maxCTC: editJob.maxCTC,
+        noticePeriod: editJob.noticePeriod,
+        postedBy: editJob.postedBy?._id
+      };
+      const response = await updateJob(payload);
       setMessage(response.data.message);
       setJobs(jobs.map(j => j._id === editJob._id ? editJob : j));
       setEditJob(null);
     } catch (error) {
       setMessage('Error updating job: ' + error.message);
+      console.error('Update job error:', error); // Added for debugging
     }
   };
 
@@ -400,7 +413,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   lightContainer: { backgroundColor: '#fff' },
   darkContainer: { backgroundColor: '#111' },
-  scrollContent: { paddingBottom: 60,flexGrow: 1 },
+  scrollContent: { paddingBottom: 60, flexGrow: 1 },
   content: { padding: 10, flexGrow: 1 },
   welcome: { fontSize: 20, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
   stats: { marginBottom: 20 },

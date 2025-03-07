@@ -23,15 +23,19 @@ const SeekerProfile = () => {
     resume: '',
     bio: '',
   });
+  const [focusedField, setFocusedField] = useState(null);
   const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleFocus = (name) => setFocusedField(name);
+  const handleBlur = () => setFocusedField(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Submitting formData:', formData); // Debug log
+    console.log('Submitting formData:', formData);
     try {
       const response = await createSeekerProfile(formData);
       setMessage(response.data.message);
@@ -42,163 +46,107 @@ const SeekerProfile = () => {
     }
   };
 
+  const renderInput = (label, name, type = 'text', placeholder, additionalProps = {}) => (
+    <div className="container relative flex flex-col gap-2 mb-6">
+      <label
+        className={`label absolute text-[15px] font-bold pointer-events-none transition-all duration-300 dark:text-white text-black z-10 bg-gradient-to-b from-transparent via-white to-transparent dark:from-transparent dark:via-gray-800 dark:to-transparent px-1 ${
+          focusedField === name || formData[name]
+            ? 'top-[-10px] left-[10px] transform -translate-y-1'
+            : 'top-[13px] left-[10px]'
+        }`}
+      >
+        {label}
+      </label>
+      <input
+        type={type}
+        name={name}
+        value={formData[name]}
+        onChange={handleChange}
+        onFocus={() => handleFocus(name)}
+        onBlur={handleBlur}
+        className={`input w-full h-[45px] rounded-md p-2 text-[15px] bg-transparent outline-none border-none dark:text-white text-black transition-all duration-300 ${
+          focusedField === name ? 'transform translate-y-2' : ''
+        }`}
+        placeholder={focusedField === name ? placeholder : ''}
+        required={name === 'fullName'}
+        {...additionalProps}
+      />
+    </div>
+  );
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900">
       <Header />
       <main className="flex-grow flex items-center justify-center p-4">
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 w-full max-w-md">
-          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4 text-center">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6 text-center">
             Create Seeker Profile
           </h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Full Name</label>
-              <input
-                type="text"
-                name="fullName"
-                value={formData.fullName}
-                onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                placeholder="Enter full name"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">WhatsApp Number</label>
-              <input
-                type="text"
-                name="whatsappNumber"
-                value={formData.whatsappNumber}
-                onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                placeholder="Enter WhatsApp number"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Email</label>
-              <input
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                placeholder="Enter email"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Skill Type</label>
+          <form onSubmit={handleSubmit} className="space-y-2">
+            {renderInput('Full Name', 'fullName', 'text', 'Enter full name')}
+            {renderInput('WhatsApp Number', 'whatsappNumber', 'text', 'Enter WhatsApp number')}
+            {renderInput('Email', 'email', 'email', 'Enter email')}
+            <div className="container relative flex flex-col gap-2 mb-6">
+              <label
+                className={`label absolute text-[15px] font-bold pointer-events-none transition-all duration-300 dark:text-white text-black z-10 bg-gradient-to-b from-transparent via-white to-transparent dark:from-transparent dark:via-gray-800 dark:to-transparent px-1 ${
+                  focusedField === 'skillType' || formData.skillType
+                    ? 'top-[-10px] left-[10px] transform -translate-y-1'
+                    : 'top-[13px] left-[10px]'
+                }`}
+              >
+                Skill Type
+              </label>
               <select
                 name="skillType"
                 value={formData.skillType}
                 onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
+                onFocus={() => handleFocus('skillType')}
+                onBlur={handleBlur}
+                className={`input w-full h-[45px] rounded-md p-2 text-[15px] bg-transparent outline-none border-none dark:text-white text-black transition-all duration-300 ${
+                  focusedField === 'skillType' ? 'transform translate-y-2' : ''
+                }`}
               >
                 <option value="IT">IT</option>
                 <option value="Non-IT">Non-IT</option>
               </select>
             </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Skills</label>
-              <input
-                type="text"
-                name="skills"
-                value={formData.skills}
-                onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                placeholder="Enter skills (comma-separated)"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Experience (years)</label>
-              <input
-                type="number"
-                name="experience"
-                value={formData.experience}
-                onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                placeholder="Enter experience"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Location</label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                placeholder="Enter location"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Current CTC</label>
-              <input
-                type="number"
-                name="currentCTC"
-                value={formData.currentCTC}
-                onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                placeholder="Enter current CTC"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Expected CTC</label>
-              <input
-                type="number"
-                name="expectedCTC"
-                value={formData.expectedCTC}
-                onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                placeholder="Enter expected CTC"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Notice Period</label>
-              <input
-                type="text"
-                name="noticePeriod"
-                value={formData.noticePeriod}
-                onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                placeholder="Enter notice period"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Last Working Date</label>
-              <input
-                type="date"
-                name="lastWorkingDate"
-                value={formData.lastWorkingDate}
-                onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Resume URL</label>
-              <input
-                type="text"
-                name="resume"
-                value={formData.resume}
-                onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                placeholder="Enter resume URL"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-900 dark:text-gray-100">Bio</label>
+            {renderInput('Skills', 'skills', 'text', 'Enter skills (comma-separated)')}
+            {renderInput('Experience (years)', 'experience', 'number', 'Enter experience')}
+            {renderInput('Location', 'location', 'text', 'Enter location')}
+            {renderInput('Current CTC', 'currentCTC', 'number', 'Enter current CTC')}
+            {renderInput('Expected CTC', 'expectedCTC', 'number', 'Enter expected CTC')}
+            {renderInput('Notice Period', 'noticePeriod', 'text', 'Enter notice period')}
+            {renderInput('Last Working Date', 'lastWorkingDate', 'date', 'YYYY-MM-DD')}
+            {renderInput('Resume URL', 'resume', 'text', 'Enter resume URL')}
+            <div className="container relative flex flex-col gap-2 mb-6">
+              <label
+                className={`label absolute text-[15px] font-bold pointer-events-none transition-all duration-300 dark:text-white text-black z-10 bg-gradient-to-b from-transparent via-white to-transparent dark:from-transparent dark:via-gray-800 dark:to-transparent px-1 ${
+                  focusedField === 'bio' || formData.bio
+                    ? 'top-[-10px] left-[10px] transform -translate-y-1'
+                    : 'top-[13px] left-[10px]'
+                }`}
+              >
+                Bio
+              </label>
               <textarea
                 name="bio"
                 value={formData.bio}
                 onChange={handleChange}
-                className="w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100"
-                placeholder="Enter bio"
+                onFocus={() => handleFocus('bio')}
+                onBlur={handleBlur}
+                className={`input w-full h-[100px] rounded-md p-2 text-[15px] bg-transparent outline-none border-none dark:text-white text-black resize-none transition-all duration-300 ${
+                  focusedField === 'bio' ? 'transform translate-y-2' : ''
+                }`}
+                placeholder={focusedField === 'bio' ? 'Enter bio' : ''}
               />
             </div>
-            <button
-              type="submit"
-              className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
-            >
-              Save Profile
+            <button type="submit" className="button w-full">
+              <div className="wrap">
+                <p>
+                  <span>Save Profile</span>
+                  <span>Saving...</span>
+                </p>
+              </div>
             </button>
           </form>
           {message && (
@@ -207,6 +155,118 @@ const SeekerProfile = () => {
         </div>
       </main>
       <Footer />
+      <style jsx>{`
+        .container {
+          min-height: 65px; /* Reserve space for input and label */
+        }
+        .input {
+          box-shadow: 3px 3px 10px rgba(0, 0, 0, 1), -1px -1px 6px rgba(255, 255, 255, 0.4);
+        }
+        .input:focus {
+          box-shadow: 3px 3px 10px rgba(0, 0, 0, 1), -1px -1px 6px rgba(255, 255, 255, 0.4),
+            inset 3px 3px 10px rgba(0, 0, 0, 1), inset -1px -1px 6px rgba(255, 255, 255, 0.4);
+        }
+        .label {
+          padding: 0 4px;
+        }
+        .button {
+          --white: #ffe7ff;
+          --bg: #080808;
+          --radius: 100px;
+          outline: none;
+          cursor: pointer;
+          border: 0;
+          position: relative;
+          border-radius: var(--radius);
+          background-color: var(--bg);
+          transition: all 0.2s ease;
+          box-shadow: inset 0 0.3rem 0.9rem rgba(255, 255, 255, 0.3),
+            inset 0 -0.1rem 0.3rem rgba(0, 0, 0, 0.7),
+            inset 0 -0.4rem 0.9rem rgba(255, 255, 255, 0.5),
+            0 3rem 3rem rgba(0, 0, 0, 0.3),
+            0 1rem 1rem -0.6rem rgba(0, 0, 0, 0.8);
+        }
+        .button .wrap {
+          font-size: 25px;
+          font-weight: 500;
+          color: rgba(255, 255, 255, 0.7);
+          padding: 32px 45px;
+          border-radius: inherit;
+          position: relative;
+          overflow: hidden;
+        }
+        .button .wrap p span:nth-child(2) {
+          display: none;
+        }
+        .button:hover .wrap p span:nth-child(1) {
+          display: none;
+        }
+        .button:hover .wrap p span:nth-child(2) {
+          display: inline-block;
+        }
+        .button .wrap p {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin: 0;
+          transition: all 0.2s ease;
+          transform: translateY(2%);
+          mask-image: linear-gradient(to bottom, white 40%, transparent);
+        }
+        .button .wrap::before,
+        .button .wrap::after {
+          content: '';
+          position: absolute;
+          transition: all 0.3s ease;
+        }
+        .button .wrap::before {
+          left: -15%;
+          right: -15%;
+          bottom: 25%;
+          top: -100%;
+          border-radius: 50%;
+          background-color: rgba(255, 255, 255, 0.12);
+        }
+        .button .wrap::after {
+          left: 6%;
+          right: 6%;
+          top: 12%;
+          bottom: 40%;
+          border-radius: 22px 22px 0 0;
+          box-shadow: inset 0 10px 8px -10px rgba(255, 255, 255, 0.8);
+          background: linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.3) 0%,
+            rgba(0, 0, 0, 0) 50%,
+            rgba(0, 0, 0, 0) 100%
+          );
+        }
+        .button:hover {
+          box-shadow: inset 0 0.3rem 0.5rem rgba(255, 255, 255, 0.4),
+            inset 0 -0.1rem 0.3rem rgba(0, 0, 0, 0.7),
+            inset 0 -0.4rem 0.9rem rgba(255, 255, 255, 0.7),
+            0 3rem 3rem rgba(0, 0, 0, 0.3),
+            0 1rem 1rem -0.6rem rgba(0, 0, 0, 0.8);
+        }
+        .button:hover .wrap::before {
+          transform: translateY(-5%);
+        }
+        .button:hover .wrap::after {
+          opacity: 0.4;
+          transform: translateY(5%);
+        }
+        .button:hover .wrap p {
+          transform: translateY(-4%);
+        }
+        .button:active {
+          transform: translateY(4px);
+          box-shadow: inset 0 0.3rem 0.5rem rgba(255, 255, 255, 0.5),
+            inset 0 -0.1rem 0.3rem rgba(0, 0, 0, 0.8),
+            inset 0 -0.4rem 0.9rem rgba(255, 255, 255, 0.4),
+            0 3rem 3rem rgba(0, 0, 0, 0.3),
+            0 1rem 1rem -0.6rem rgba(0, 0, 0, 0.8);
+        }
+      `}</style>
     </div>
   );
 };
