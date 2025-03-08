@@ -1,9 +1,9 @@
-// O:\JobConnector\backend\server.js
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const multer = require('multer');
+const path = require('path');
 
 dotenv.config();
 
@@ -13,6 +13,7 @@ const upload = multer({ dest: 'uploads/' });
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve uploaded files statically
 
 // MongoDB connection using local instance
 // mongoose.connect('mongodb://localhost:27017/jobconnector', {
