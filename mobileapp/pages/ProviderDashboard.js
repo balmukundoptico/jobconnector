@@ -183,7 +183,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
       return;
     }
     try {
-      const baseUrl = Platform.OS === 'web' ? 'http://localhost:5000' : 'http://192.168.31.124:5000';
+      const baseUrl = Platform.OS === 'web' ? 'https://jobconnector-backend.onrender.com' : 'https://jobconnector-backend.onrender.com';
       const resumeUrl = `${baseUrl}${resumePath}`;
       if (Platform.OS === 'web') {
         window.open(resumeUrl, '_blank');
