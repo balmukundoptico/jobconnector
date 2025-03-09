@@ -31,7 +31,7 @@ export const sendMassEmail = (data) => api.post('/jobs/mass-email', data);
 export const searchSeekers = (data) => api.get('/jobs/seekers', { params: data });
 export const uploadExcel = (formData) => {
   console.log('API Request - uploadExcel FormData:', formData._parts);
-  return fetch(`${BASE_URL}/jobs/upload-excel`, {
+  return fetch(`${"https://jobconnector-backend.onrender.com/api"}/jobs/upload-excel`, {
     method: 'POST',
     body: formData,
   })

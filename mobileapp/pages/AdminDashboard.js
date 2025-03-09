@@ -1,6 +1,5 @@
-// O:\JobConnector\mobileapp\pages\AdminDashboard.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Animated, Modal, ScrollView, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Animated, Modal, ScrollView, ActivityIndicator, Platform, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import { getProfile, uploadExcel, searchSeekers, searchJobs, deleteSeeker, deleteJob, updateSeekerProfile, updateJob } from '../utils/api';
@@ -62,7 +61,6 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
           providers: new Set(jobsResponse.data.map(job => job.postedBy?._id)).size || 0,
         });
 
-        // Set animation scales for delete/edit buttons
         const scales = {};
         seekersResponse.data.forEach(seeker => {
           scales[seeker._id] = { delete: new Animated.Value(1), edit: new Animated.Value(1) };
@@ -148,11 +146,19 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
       console.log('Uploading file:', file.name, 'with type:', type);
       const response = await uploadExcel(formData);
       console.log('Upload response:', response);
-      setMessage(`${response.message} - ${type === 'seekers' ? response.seekersCount : response.jobsCount} records imported`);
+
+      // Show success message after successful upload
+      Alert.alert(
+        'Success',
+        'Data uploaded successfully!',
+        [{ text: 'OK', onPress: () => console.log('Success alert closed') }]
+      );
+
+      setMessage(''); // Clear any previous message
       setFile(null);
       setUploadFileName('');
 
-      // Refresh data
+      // Refresh data immediately
       const seekersResponse = await searchSeekers({});
       const jobsResponse = await searchJobs({});
       setSeekers(seekersResponse.data || []);
@@ -164,7 +170,8 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
       });
     } catch (error) {
       console.error('handleUpload error:', error.message, error.stack);
-      setMessage('Error uploading Excel: ' + error.message);
+      Alert.alert('Upload Error', error.message || 'Error uploading Excel');
+      setMessage(''); // Clear message on error too
     } finally {
       setLoading(false);
     }
@@ -199,7 +206,7 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
   const handleEditSeeker = (seeker) => {
     try {
       console.log('Editing seeker:', seeker._id);
-      setEditSeeker({ ...seeker }); // Clone to avoid direct state mutation
+      setEditSeeker({ ...seeker });
     } catch (error) {
       console.error('handleEditSeeker error:', error.message, error.stack);
       setMessage('Error preparing seeker edit: ' + error.message);
@@ -223,7 +230,7 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
   const handleEditJob = (job) => {
     try {
       console.log('Editing job:', job._id);
-      setEditJob({ ...job }); // Clone to avoid direct state mutation
+      setEditJob({ ...job });
     } catch (error) {
       console.error('handleEditJob error:', error.message, error.stack);
       setMessage('Error preparing job edit: ' + error.message);
