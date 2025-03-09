@@ -1,9 +1,8 @@
-// O:\JobConnector\mobileapp\pages\SeekerDashboard.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Animated, Linking, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Animated, Linking, ScrollView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import * as DocumentPicker from 'expo-document-picker';
-import { getProfile, searchJobs, updateSeekerProfile, saveSearch, applyToJob } from '../utils/api';
+import * as FileSystem from 'expo-file-system';
+import { getProfile, searchJobs, applyToJob } from '../utils/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -11,15 +10,12 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
   const [user, setUser] = useState(route?.params?.user || null);
   const [searchQuery, setSearchQuery] = useState('');
   const [jobs, setJobs] = useState([]);
-  const [resumeFile, setResumeFile] = useState(null);
-  const [resumeFileName, setResumeFileName] = useState('');
   const [message, setMessage] = useState('');
   const [appliedJobs, setAppliedJobs] = useState([]);
   const navigation = useNavigation();
   const [applyScales, setApplyScales] = useState({});
   const [connectScales, setConnectScales] = useState({});
   const [profileScale] = useState(new Animated.Value(1));
-  const [uploadScale] = useState(new Animated.Value(1));
   const [logoutScale] = useState(new Animated.Value(1));
   const [downloadScale] = useState(new Animated.Value(1));
 
@@ -40,13 +36,8 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
           ...(isEmail ? { email: route.params.contact } : { whatsappNumber: route.params.contact }),
         });
         const fetchedUser = response.data || {};
-        console.log('Fetched user skills:', fetchedUser.skills, 'Type:', typeof fetchedUser.skills); // Debug skills
         setUser(fetchedUser);
         setAppliedJobs(fetchedUser.appliedJobs || []);
-        setResumeFileName(fetchedUser.resumeFileName || '');
-        if (fetchedUser.resume) {
-          setResumeFile(fetchedUser.resume);
-        }
       }
       const response = await searchJobs({});
       setJobs(response.data.map(job => ({
@@ -82,44 +73,27 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
     setMessage(`Connected via WhatsApp for ${jobTitle}`);
   };
 
-  const handleUploadResume = async () => {
+  const handleDownloadResume = async () => {
+    if (!user.resume) {
+      setMessage('No resume available to download');
+      return;
+    }
     try {
-      console.log('Picking resume...');
-      const result = await DocumentPicker.getDocumentAsync({
-        type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
-      });
-      console.log('Picker result:', JSON.stringify(result, null, 2));
-      if (!result.canceled && result.assets) {
-        const selectedFile = result.assets[0];
-        const formData = new FormData();
-        formData.append('resume', {
-          uri: selectedFile.uri,
-          name: selectedFile.name || 'resume.pdf',
-          type: selectedFile.mimeType || 'application/pdf',
-        });
-        formData.append('_id', user._id);
-        setResumeFileName(selectedFile.name);
-        const response = await updateSeekerProfile(formData);
-        setMessage(response.message || 'Resume uploaded successfully');
-        if (response.resume) {
-          setResumeFile(response.resume);
-        }
+      const baseUrl = Platform.OS === 'web' ? 'https://jobconnector-backend.onrender.com' : 'https://jobconnector-backend.onrender.com';
+      const resumeUrl = `${baseUrl}${user.resume}`;
+      console.log('Downloading resume from:', resumeUrl);
+      if (Platform.OS === 'web') {
+        window.open(resumeUrl, '_blank');
+        setMessage('Resume opened in new tab');
+      } else {
+        const fileUri = `${FileSystem.documentDirectory}resume${user.resume.endsWith('.pdf') ? '.pdf' : '.docx'}`;
+        const { uri } = await FileSystem.downloadAsync(resumeUrl, fileUri);
+        await Linking.openURL(uri);
+        setMessage('Resume downloaded successfully');
       }
     } catch (error) {
-      console.error('handleUploadResume error:', error.message, error.stack);
-      setMessage('Error uploading resume: ' + error.message);
-    }
-  };
-
-  const handleDownloadResume = () => {
-    if (resumeFile) {
-      console.log('Downloading resume from:', resumeFile);
-      Linking.openURL(resumeFile).catch(err => {
-        console.error('Error opening resume:', err);
-        setMessage('Error downloading resume: ' + err.message);
-      });
-    } else {
-      setMessage('No resume available to download');
+      console.error('Download error:', error);
+      setMessage('Error downloading resume: ' + error.message);
     }
   };
 
@@ -131,14 +105,13 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
     navigation.navigate('Home');
   };
 
-  const handlePressIn = (scale) => { Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start(); };
-  const handlePressOut = (scale) => { Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start(); };
+  const handlePressIn = (scale) => Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
+  const handlePressOut = (scale) => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
 
-  // Helper function to normalize skills for display
   const formatSkills = (skills) => {
     if (Array.isArray(skills)) return skills.join(', ');
-    if (typeof skills === 'string') return skills; // If it's a string, use it as-is
-    return 'N/A'; // Fallback for null, undefined, or other types
+    if (typeof skills === 'string') return skills;
+    return 'N/A';
   };
 
   return (
@@ -169,9 +142,9 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
                   Location: {user.location || 'N/A'}
                 </Text>
                 <Text style={[styles.profileText, isDarkMode ? styles.darkText : styles.lightText]}>
-                  Resume: {resumeFileName || 'Not uploaded'}
+                  Resume: {user.resume ? user.resume.split('/').pop() : 'Not uploaded'}
                 </Text>
-                {resumeFile && (
+                {user.resume && (
                   <TouchableOpacity
                     style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
                     onPress={handleDownloadResume}
@@ -179,26 +152,11 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
                     onPressOut={() => handlePressOut(downloadScale)}
                   >
                     <Animated.View style={{ transform: [{ scale: downloadScale }] }}>
-                      <Text style={styles.buttonText}>Download Resume</Text>
+                      <Text style={styles.buttonText}>View/Download Resume</Text>
                     </Animated.View>
                   </TouchableOpacity>
                 )}
               </View>
-
-              <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Upload Resume</Text>
-              <Text style={[styles.subtitle, isDarkMode ? styles.darkText : styles.lightText]}>
-                {resumeFileName ? `Selected: ${resumeFileName}` : 'No resume selected'}
-              </Text>
-              <TouchableOpacity
-                style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                onPress={handleUploadResume}
-                onPressIn={() => handlePressIn(uploadScale)}
-                onPressOut={() => handlePressOut(uploadScale)}
-              >
-                <Animated.View style={{ transform: [{ scale: uploadScale }] }}>
-                  <Text style={styles.buttonText}>Upload Resume (.pdf/.docx)</Text>
-                </Animated.View>
-              </TouchableOpacity>
 
               <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Job Search</Text>
               <TextInput
@@ -283,7 +241,6 @@ const styles = StyleSheet.create({
   scrollContent: { paddingBottom: 60, flexGrow: 1 },
   content: { padding: 10, flexGrow: 1 },
   title: { fontSize: 20, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
-  subtitle: { fontSize: 14, marginBottom: 10 },
   profileContainer: { padding: 10, backgroundColor: '#f0f0f0', borderRadius: 5, marginBottom: 20 },
   profileText: { fontSize: 16, marginBottom: 5 },
   input: { borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5 },
@@ -303,3 +260,5 @@ const styles = StyleSheet.create({
   lightText: { color: '#000' },
   darkText: { color: '#ddd' },
 });
+
+// working code dont chnage

@@ -1,37 +1,64 @@
-// O:\JobConnector\mobileapp\utils\api.js
 import axios from 'axios';
 import { Platform } from 'react-native';
 
 // Local backend URL with your IP
 // const BASE_URL = Platform.OS === 'web' ? 'http://localhost:5000/api' : 'http://192.168.31.124:5000/api';
+const BASE_URL = Platform.OS === 'web' ? 'https://jobconnector-backend.onrender.com/api' : 'https://jobconnector-backend.onrender.com/api';
 
-// const api = axios.create({
-//   baseURL: BASE_URL,
-//   headers: { 'Content-Type': 'application/json' },
-// });
-
-// Commented out Render URL for later use
+// Default axios instance for JSON requests
 const api = axios.create({
-  baseURL: 'https://jobconnector-backend.onrender.com/api',
+  baseURL: BASE_URL,
   headers: { 'Content-Type': 'application/json' },
 });
 
+// Commented out Render URL for later use
+// const api = axios.create({
+//   baseURL: 'https://jobconnector-backend.onrender.com/api',
+//   headers: { 'Content-Type': 'application/json' },
+// });
+
+// Authentication
 export const requestOTP = (data) => api.post('/auth/request-otp', data);
 export const verifyOTP = (data) => api.post('/auth/verify-otp', data);
+
+// Profile
 export const getProfile = (data) => api.get('/profile', { params: data });
-export const createSeekerProfile = (data) => api.post('/profile/seeker', data);
+
+// Updated createSeekerProfile to handle FormData for resume upload
+export const createSeekerProfile = (data) => {
+  console.log('Sending createSeekerProfile request with data:', [...data.entries()]);
+  return axios.post(`${BASE_URL}/profile/seeker`, data, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
+// Updated updateSeekerProfile to handle FormData for resume upload and fix endpoint
+export const updateSeekerProfile = (data) => {
+  console.log('Sending updateSeekerProfile request with data:', [...data.entries()]);
+  return axios.post(`${BASE_URL}/profile/seeker/update`, data, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};
+
 export const createProviderProfile = (data) => api.post('/profile/provider', data);
-export const updateSeekerProfile = (data) => api.post('/jobs/update-seeker', data);
 export const updateProviderProfile = (data) => api.post('/profile/provider/update', data);
+
+// Jobs
 export const postJob = (data) => api.post('/jobs/post', data);
 export const searchJobs = (data) => api.get('/jobs/search', { params: data });
 export const sendWhatsAppMessage = (data) => api.post('/jobs/whatsapp', data);
 export const getTrendingSkills = () => api.get('/jobs/trending-skills');
 export const sendMassEmail = (data) => api.post('/jobs/mass-email', data);
 export const searchSeekers = (data) => api.get('/jobs/seekers', { params: data });
+
+// Excel upload using fetch (unchanged, already handles FormData)
 export const uploadExcel = (formData) => {
   console.log('API Request - uploadExcel FormData:', formData._parts);
-  return fetch(`${"https://jobconnector-backend.onrender.com/api"}/jobs/upload-excel`, {
+  return fetch(`${BASE_URL}/jobs/upload-excel`, {
     method: 'POST',
     body: formData,
   })
@@ -46,15 +73,14 @@ export const uploadExcel = (formData) => {
           throw new Error('Invalid JSON response: ' + text);
         }
         if (!response.ok) {
-          // Throw an error with the backend's message for non-200 statuses
           throw new Error(json.message || `Upload failed with status ${response.status}`);
         }
-        return json; // Return parsed JSON for successful responses
+        return json;
       });
     })
     .catch(error => {
       console.error('Fetch error:', error.message, error.stack);
-      throw error; // Re-throw to let the caller handle it
+      throw error;
     });
 };
 
@@ -67,3 +93,4 @@ export const getPostedJobs = () => api.get('/jobs/posted');
 export const updateJob = (data) => api.post('/jobs/update-job', data);
 
 export default api;
+

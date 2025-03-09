@@ -29,10 +29,10 @@ const upload = multer({
 });
 
 // Routes
-router.get('/get-profile', getProfile);
-router.post('/seeker', upload.single('resume'), createSeekerProfile);
-router.post('/provider', createProviderProfile);
-router.post('/seeker/update', upload.single('resume'), updateSeekerProfile);
-router.post('/provider/update', updateProviderProfile);
+router.get('/get-profile', getProfile); // Changed from '/' to '/get-profile' for clarity
+router.post('/seeker', upload.single('resume'), createSeekerProfile); // Create seeker with resume upload
+router.post('/provider', createProviderProfile); // Create provider (no file upload needed)
+router.post('/seeker/update', upload.single('resume'), updateSeekerProfile); // Update seeker with resume upload
+router.post('/provider/update', updateProviderProfile); // Update provider (no file upload needed)
 
 module.exports = router;

@@ -1,8 +1,7 @@
 const JobSeeker = require('../models/JobSeeker');
 const JobProvider = require('../models/JobProvider');
 
-// Define functions explicitly with const
-const createSeekerProfile = async (req, res) => {
+exports.createSeekerProfile = async (req, res) => {
   try {
     console.log('Request body:', req.body);
     console.log('File:', req.file);
@@ -26,19 +25,22 @@ const createSeekerProfile = async (req, res) => {
       return res.status(400).json({ message: 'Full name is required' });
     }
 
+    // Check for existing user
     const existingSeeker = await JobSeeker.findOne({ $or: [{ whatsappNumber }, { email }] });
     if (existingSeeker) {
       return res.status(400).json({ message: 'User already exists. Please login.' });
     }
 
+    // Parse skills (handles string or array input)
     let parsedSkills = skills || [];
     if (typeof skills === 'string') {
       parsedSkills = skills.split(',').map(s => s.trim()).filter(s => s);
     }
 
+    // Handle resume upload
     let resumePath = '';
     if (req.file) {
-      resumePath = `/uploads/${req.file.filename}`;
+      resumePath = `/uploads/${req.file.filename}`; // Adjust path as needed for your storage setup
     }
 
     const seeker = new JobSeeker({
@@ -66,10 +68,11 @@ const createSeekerProfile = async (req, res) => {
   }
 };
 
-const createProviderProfile = async (req, res) => {
+exports.createProviderProfile = async (req, res) => {
   const { companyName, hrName, hrWhatsappNumber, email } = req.body;
 
   try {
+    // Check for existing provider
     const existingProvider = await JobProvider.findOne({ $or: [{ hrWhatsappNumber }, { email }] });
     if (existingProvider) {
       return res.status(400).json({ message: 'Provider already exists. Please login.' });
@@ -90,7 +93,7 @@ const createProviderProfile = async (req, res) => {
   }
 };
 
-const updateSeekerProfile = async (req, res) => {
+exports.updateSeekerProfile = async (req, res) => {
   try {
     console.log('Request body:', req.body);
     console.log('File:', req.file);
@@ -115,11 +118,13 @@ const updateSeekerProfile = async (req, res) => {
       return res.status(400).json({ message: 'Seeker ID is required' });
     }
 
+    // Parse skills (handles string or array input)
     let parsedSkills = skills;
     if (typeof skills === 'string') {
       parsedSkills = skills.split(',').map(s => s.trim()).filter(s => s);
     }
 
+    // Handle resume upload (only update if a new file is provided)
     let resumePath = undefined;
     if (req.file) {
       resumePath = `/uploads/${req.file.filename}`;
@@ -141,6 +146,7 @@ const updateSeekerProfile = async (req, res) => {
       resume: resumePath,
     };
 
+    // Remove undefined fields to avoid overwriting with empty values
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
     const updatedSeeker = await JobSeeker.findByIdAndUpdate(_id, updateData, { new: true });
@@ -155,7 +161,7 @@ const updateSeekerProfile = async (req, res) => {
   }
 };
 
-const updateProviderProfile = async (req, res) => {
+exports.updateProviderProfile = async (req, res) => {
   const { _id, companyName, hrName, hrWhatsappNumber, email } = req.body;
 
   try {
@@ -170,6 +176,7 @@ const updateProviderProfile = async (req, res) => {
       email,
     };
 
+    // Remove undefined fields
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
 
     const provider = await JobProvider.findByIdAndUpdate(_id, updateData, { new: true });
@@ -184,7 +191,7 @@ const updateProviderProfile = async (req, res) => {
   }
 };
 
-const getProfile = async (req, res) => {
+exports.getProfile = async (req, res) => {
   const { role, whatsappNumber, email } = req.query;
 
   try {
@@ -208,7 +215,6 @@ const getProfile = async (req, res) => {
   }
 };
 
-// Export all functions
 module.exports = {
   createSeekerProfile,
   createProviderProfile,

@@ -1,7 +1,7 @@
-// O:\JobConnector\mobileapp\pages\SeekerProfile.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, ScrollView, Platform, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import * as DocumentPicker from 'expo-document-picker';
 import { createSeekerProfile, updateSeekerProfile } from '../utils/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
@@ -21,14 +21,17 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
     lastWorkingDate: '',
     bio: '',
   });
+  const [resumeFile, setResumeFile] = useState(null);
+  const [resumeFileName, setResumeFileName] = useState('');
   const [message, setMessage] = useState('');
   const [profileCreated, setProfileCreated] = useState(false);
   const [isEditMode, setIsEditMode] = useState(!!route?.params?.user);
   const [focusedField, setFocusedField] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // For button text toggle
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigation = useNavigation();
   const [submitScale] = useState(new Animated.Value(1));
   const [dashboardScale] = useState(new Animated.Value(1));
+  const [uploadScale] = useState(new Animated.Value(1));
 
   useEffect(() => {
     if (isEditMode && route?.params?.user) {
@@ -46,6 +49,7 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
         lastWorkingDate: route.params.user.lastWorkingDate || '',
         bio: route.params.user.bio || '',
       });
+      setResumeFileName(route.params.user.resume ? route.params.user.resume.split('/').pop() : '');
     }
   }, [route, isEditMode]);
 
@@ -56,6 +60,47 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
   const handleFocus = (name) => setFocusedField(name);
   const handleBlur = () => setFocusedField(null);
 
+  const handleFilePick = async () => {
+    try {
+      console.log('Picking resume file...');
+      const result = await DocumentPicker.getDocumentAsync({
+        type: [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ],
+      });
+      console.log('Picker result:', JSON.stringify(result, null, 2));
+      if (!result.canceled && result.assets) {
+        const selectedFile = result.assets[0];
+        let fileData;
+        if (Platform.OS === 'web') {
+          const response = await fetch(selectedFile.uri);
+          const blob = await response.blob();
+          fileData = new File([blob], selectedFile.name || 'resume.pdf', {
+            type: selectedFile.mimeType || 'application/pdf',
+          });
+        } else {
+          fileData = {
+            uri: selectedFile.uri,
+            name: selectedFile.name || 'resume.pdf',
+            type: selectedFile.mimeType || 'application/pdf',
+          };
+        }
+        setResumeFile(fileData);
+        setResumeFileName(selectedFile.name);
+        setMessage('');
+      } else {
+        setMessage('No file selected');
+      }
+    } catch (error) {
+      console.error('handleFilePick error:', error);
+      setMessage('Error selecting file: ' + error.message);
+      setResumeFile(null);
+      setResumeFileName('');
+    }
+  };
+
   const handleSubmitProfile = async () => {
     if (!formData.fullName) {
       setMessage('Please fill in full name');
@@ -63,22 +108,50 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
     }
     setIsSubmitting(true);
     try {
-      const profileData = {
-        ...formData,
-        skills: formData.skills || '',
-        experience: formData.experience ? parseInt(formData.experience) : 0,
-        currentCTC: formData.currentCTC ? parseInt(formData.currentCTC) : 0,
-        expectedCTC: formData.expectedCTC ? parseInt(formData.expectedCTC) : 0,
-      };
-      console.log('Sending profile data to server:', profileData);
+      const profileData = new FormData();
+      profileData.append('fullName', formData.fullName);
+      profileData.append('whatsappNumber', formData.whatsappNumber || '');
+      profileData.append('email', formData.email || '');
+      profileData.append('skillType', formData.skillType || 'IT');
+      profileData.append('skills', formData.skills || '');
+      profileData.append('experience', formData.experience ? parseInt(formData.experience) : 0);
+      profileData.append('location', formData.location || '');
+      profileData.append('currentCTC', formData.currentCTC ? parseInt(formData.currentCTC) : 0);
+      profileData.append('expectedCTC', formData.expectedCTC ? parseInt(formData.expectedCTC) : 0);
+      profileData.append('noticePeriod', formData.noticePeriod || '');
+      profileData.append('lastWorkingDate', formData.lastWorkingDate || '');
+      profileData.append('bio', formData.bio || '');
+
+      if (resumeFile) {
+        if (Platform.OS === 'web') {
+          profileData.append('resume', resumeFile, resumeFileName);
+        } else {
+          profileData.append('resume', {
+            uri: resumeFile.uri,
+            name: resumeFile.name,
+            type: resumeFile.type,
+          });
+        }
+        console.log('Resume file appended:', { uri: resumeFile.uri, name: resumeFile.name, type: resumeFile.type });
+      }
+
+      if (isEditMode) {
+        profileData.append('_id', route.params.user._id);
+      }
+
+      console.log('Sending profile data to server:', [...profileData.entries()]);
       let response;
       if (isEditMode) {
-        response = await updateSeekerProfile({ ...profileData, _id: route.params.user._id });
+        response = await updateSeekerProfile(profileData);
       } else {
         response = await createSeekerProfile(profileData);
       }
+
       setMessage(response.data.message);
       setProfileCreated(true);
+      Alert.alert('Success', 'Profile saved successfully!');
+      setResumeFile(null);
+      setResumeFileName('');
     } catch (error) {
       console.error('API error:', error.response?.data || error.message);
       setMessage('Error saving profile: ' + (error.response?.data?.message || error.message));
@@ -88,27 +161,21 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
   };
 
   const handleGoToDashboard = () => {
-    navigation.navigate('SeekerDashboard', { user: { ...route.params.user, ...formData } });
+    navigation.navigate('SeekerDashboard', { user: { ...route.params.user, ...formData, resume: resumeFileName ? `/uploads/${resumeFileName}` : route.params.user?.resume } });
   };
 
-  const handlePressIn = (scale) => {
-    Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
-  };
-  const handlePressOut = (scale) => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
-  };
+  const handlePressIn = (scale) => Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
+  const handlePressOut = (scale) => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
 
   const renderInput = (label, name, type = 'text', placeholder, additionalProps = {}) => (
     <View style={styles.inputContainer}>
-      <Text
-        style={[
-          styles.label,
-          isDarkMode ? styles.darkText : styles.lightText,
-          (focusedField === name || formData[name]) ? styles.labelActive : styles.labelInactive,
-          isDarkMode && (focusedField === name || formData[name]) ? styles.darkLabelActive : {},
-          !isDarkMode && (focusedField === name || formData[name]) ? styles.lightLabelActive : {},
-        ]}
-      >
+      <Text style={[
+        styles.label,
+        isDarkMode ? styles.darkText : styles.lightText,
+        (focusedField === name || formData[name]) ? styles.labelActive : styles.labelInactive,
+        isDarkMode && (focusedField === name || formData[name]) ? styles.darkLabelActive : {},
+        !isDarkMode && (focusedField === name || formData[name]) ? styles.lightLabelActive : {},
+      ]}>
         {label}
       </Text>
       <TextInput
@@ -154,12 +221,29 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
                 {renderInput('Notice Period', 'noticePeriod', 'text', 'Enter notice period')}
                 {renderInput('Last Working Date', 'lastWorkingDate', 'text', 'YYYY-MM-DD')}
                 {renderInput('Bio', 'bio', 'text', 'Enter bio', { multiline: true })}
+
+                <Text style={[styles.subtitle, isDarkMode ? styles.darkText : styles.lightText]}>
+                  {resumeFileName ? `Selected: ${resumeFileName}` : 'Upload Resume (PDF/DOCX)'}
+                </Text>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleFilePick}
+                  onPressIn={() => handlePressIn(uploadScale)}
+                  onPressOut={() => handlePressOut(uploadScale)}
+                  activeOpacity={0.8}
+                >
+                  <Animated.View style={[styles.buttonWrap, { transform: [{ scale: uploadScale }] }]}>
+                    <Text style={styles.buttonText}>Pick Resume File</Text>
+                  </Animated.View>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                   style={styles.button}
                   onPress={handleSubmitProfile}
                   onPressIn={() => handlePressIn(submitScale)}
                   onPressOut={() => handlePressOut(submitScale)}
                   activeOpacity={0.8}
+                  disabled={isSubmitting}
                 >
                   <Animated.View style={[styles.buttonWrap, { transform: [{ scale: submitScale }] }]}>
                     <Text style={styles.buttonText}>
@@ -191,27 +275,11 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
 };
 
 const styles = StyleSheet.create({
-  // Container (matches .flex.flex-col.min-h-screen.bg-gray-100.dark:bg-gray-900)
-  container: {
-    flex: 1,
-  },
-  lightContainer: {
-    backgroundColor: '#F3F4F6', // bg-gray-100
-  },
-  darkContainer: {
-    backgroundColor: '#1F2937', // bg-gray-900
-  },
-  scrollContent: {
-    flexGrow: 1,
-  },
-  // Main (matches .flex-grow.flex.items-center.justify-center.p-4)
-  main: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  // Form Container (matches .bg-white.dark:bg-gray-800.p-6.rounded-lg.shadow-md.border.border-gray-200.dark:border-gray-700.w-full.max-w-md)
+  container: { flex: 1 },
+  lightContainer: { backgroundColor: '#F3F4F6' },
+  darkContainer: { backgroundColor: '#1F2937' },
+  scrollContent: { flexGrow: 1 },
+  main: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
   formContainer: {
     width: '100%',
     maxWidth: 400,
@@ -224,58 +292,18 @@ const styles = StyleSheet.create({
     elevation: 5,
     borderWidth: 1,
   },
-  lightFormContainer: {
-    backgroundColor: '#FFFFFF', // bg-white
-    borderColor: '#E5E7EB', // border-gray-200
-  },
-  darkFormContainer: {
-    backgroundColor: '#374151', // bg-gray-800
-    borderColor: '#4B5563', // border-gray-700
-  },
-  // Title (matches .text-2xl.font-semibold.text-gray-900.dark:text-white.mb-6.text-center)
-  title: {
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  lightText: {
-    color: '#1F2937', // text-gray-900
-  },
-  darkText: {
-    color: '#F9FAFB', // text-white
-  },
-  // Input Container (matches .container.relative.flex.flex-col.gap-2.mb-6 and .container { min-height: 65px })
-  inputContainer: {
-    minHeight: 65,
-    width: '100%',
-    marginBottom: 24,
-    position: 'relative',
-  },
-  // Label (matches .label.absolute.text-[15px].font-bold.pointer-events-none.transition-all.duration-300.dark:text-white.text-black.z-10.bg-gradient-to-b.from-transparent.via-white.to-transparent.dark:from-transparent.dark:via-gray-800.dark:to-transparent.px-1)
-  label: {
-    position: 'absolute',
-    fontSize: 15,
-    fontWeight: '700',
-    zIndex: 10,
-    paddingHorizontal: 4,
-  },
-  labelInactive: {
-    top: 13,
-    left: 10,
-  },
-  labelActive: {
-    top: -10,
-    left: 10,
-    transform: [{ translateY: -1 }],
-  },
-  lightLabelActive: {
-    backgroundColor: '#FFFFFF', // via-white
-  },
-  darkLabelActive: {
-    backgroundColor: '#374151', // via-gray-800
-  },
-  // Input (matches .input.w-full.h-[45px].rounded-md.p-2.text-[15px].bg-transparent.outline-none.border-none.dark:text-white.text-black.transition-all.duration-300)
+  lightFormContainer: { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' },
+  darkFormContainer: { backgroundColor: '#374151', borderColor: '#4B5563' },
+  title: { fontSize: 24, fontWeight: '600', marginBottom: 24, textAlign: 'center' },
+  subtitle: { fontSize: 14, marginBottom: 10 },
+  lightText: { color: '#1F2937' },
+  darkText: { color: '#F9FAFB' },
+  inputContainer: { minHeight: 65, width: '100%', marginBottom: 24, position: 'relative' },
+  label: { position: 'absolute', fontSize: 15, fontWeight: '700', zIndex: 10, paddingHorizontal: 4 },
+  labelInactive: { top: 13, left: 10 },
+  labelActive: { top: -10, left: 10, transform: [{ translateY: -1 }] },
+  lightLabelActive: { backgroundColor: '#FFFFFF' },
+  darkLabelActive: { backgroundColor: '#374151' },
   input: {
     width: '100%',
     height: 45,
@@ -283,7 +311,6 @@ const styles = StyleSheet.create({
     padding: 8,
     fontSize: 15,
     backgroundColor: 'transparent',
-    // Shadows from .input { box-shadow: 3px 3px 10px rgba(0, 0, 0, 1), -1px -1px 6px rgba(255, 255, 255, 0.4) }
     shadowColor: '#000',
     shadowOffset: { width: 3, height: 3 },
     shadowOpacity: 1,
@@ -294,15 +321,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 6,
   },
-  lightInput: {
-    backgroundColor: '#FFFFFF', // Adjusted for visibility
-    color: '#1F2937', // text-black
-  },
-  darkInput: {
-    backgroundColor: '#374151', // Adjusted for visibility
-    color: '#F9FAFB', // text-white
-  },
-  // Input Focused (matches .input:focus { box-shadow: 3px 3px 10px rgba(0, 0, 0, 1), -1px -1px 6px rgba(255, 255, 255, 0.4), inset 3px 3px 10px rgba(0, 0, 0, 1), inset -1px -1px 6px rgba(255, 255, 255, 0.4) })
+  lightInput: { backgroundColor: '#FFFFFF', color: '#1F2937' },
+  darkInput: { backgroundColor: '#374151', color: '#F9FAFB' },
   inputFocused: {
     shadowColor: '#000',
     shadowOffset: { width: 3, height: 3 },
@@ -313,50 +333,22 @@ const styles = StyleSheet.create({
     shadowOffset: { width: -1, height: -1 },
     shadowOpacity: 0.4,
     shadowRadius: 6,
-    // Inset shadows not supported in RN; outer shadows enhanced
   },
-  textArea: {
-    height: 100, // Matches .h-[100px] for bio
-    textAlignVertical: 'top',
-  },
-  // Button (matches .button.w-full and all nested styles)
+  textArea: { height: 100, textAlignVertical: 'top' },
   button: {
     width: '100%',
-    borderRadius: 100, // --radius: 100px
-    backgroundColor: '#080808', // --bg: #080808
-    // Shadows from .button { box-shadow: inset 0 0.3rem 0.9rem rgba(255, 255, 255, 0.3), ... }
+    borderRadius: 100,
+    backgroundColor: '#080808',
     shadowColor: '#FFF',
-    shadowOffset: { width: 0, height: 4.8 }, // 0.3rem = 4.8px
+    shadowOffset: { width: 0, height: 4.8 },
     shadowOpacity: 0.3,
-    shadowRadius: 14.4, // 0.9rem = 14.4px
+    shadowRadius: 14.4,
     elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -1.6 }, // -0.1rem = -1.6px
-    shadowOpacity: 0.7,
-    shadowRadius: 4.8, // 0.3rem = 4.8px
-    shadowColor: '#FFF',
-    shadowOffset: { width: 0, height: -6.4 }, // -0.4rem = -6.4px
-    shadowOpacity: 0.5,
-    shadowRadius: 14.4, // 0.9rem = 14.4px
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 48 }, // 3rem = 48px
-    shadowOpacity: 0.3,
-    shadowRadius: 48,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 }, // 1rem = 16px
-    shadowOpacity: 0.8,
-    shadowRadius: 9.6, // Adjusted for -0.6rem offset
   },
   buttonWrap: {
-    fontSize: 25,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.7)',
-    paddingVertical: 32, // Matches .wrap padding: 32px 45px
+    paddingVertical: 32,
     paddingHorizontal: 45,
-    borderRadius: 100, // Matches inherit
-    position: 'relative',
-    overflow: 'hidden',
-    // Mimics .wrap::before { background-color: rgba(255, 255, 255, 0.12) }
+    borderRadius: 100,
     backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
   buttonText: {
@@ -365,10 +357,9 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
   },
-  message: {
-    marginTop: 8,
-    textAlign: 'center',
-  },
+  message: { marginTop: 8, textAlign: 'center' },
 });
 
 export default SeekerProfile;
+
+// working code dont chnage
