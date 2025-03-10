@@ -33,6 +33,7 @@ export default function AuthForm({ isDarkMode, toggleDarkMode, route }) {
       const response = await requestOTP(payload); // Live backend call
       setMessage(response.data.message); // Show message
       setOtpSent(true); // Mark OTP sent
+      setServerOtp(response.data.serverOtp);
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error requesting OTP');
     }
@@ -51,6 +52,7 @@ export default function AuthForm({ isDarkMode, toggleDarkMode, route }) {
         otp,
         role,
         bypass: false,
+        serverOtp:serverOtp,
       };
       const response = await verifyOTP(payload); // Live backend call
       setMessage(response.data.message); // Show message
