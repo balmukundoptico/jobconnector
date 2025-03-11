@@ -77,17 +77,17 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
           'application/msword',
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         ],
-        copyToCacheDirectory: true, // Ensures file is accessible on Android
+        copyToCacheDirectory: true,
       });
       console.log('Picker result:', JSON.stringify(result, null, 2));
       if (!result.canceled && result.assets) {
         const selectedFile = result.assets[0];
         const fileData = {
           uri: selectedFile.uri,
-          name: selectedFile.name || `resume-${Date.now()}.pdf`,
+          name: selectedFile.name || `resume-${Date.now()}${path.extname(selectedFile.uri) || '.pdf'}`,
           type:
             selectedFile.mimeType ||
-            (selectedFile.name.endsWith('.pdf')
+            (selectedFile.name?.endsWith('.pdf')
               ? 'application/pdf'
               : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
         };
@@ -128,6 +128,7 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
       profileData.append('lastWorkingDate', formData.lastWorkingDate || '');
       profileData.append('bio', formData.bio || '');
 
+      // --- Change 1: Correctly append resume file ---
       if (resumeFile) {
         profileData.append('resume', {
           uri: resumeFile.uri,
@@ -139,13 +140,16 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
           name: resumeFile.name,
           type: resumeFile.type,
         });
+      } else if (isEditMode && !resumeFile) {
+        // Preserve existing resume if no new file is selected
+        profileData.append('resume', route.params.user.resume || '');
       }
 
       if (isEditMode) {
         profileData.append('_id', route.params.user._id);
       }
 
-      console.log('Sending profile data to server:', [...profileData.entries()]);
+      console.log('updateSeekerProfile request with data:', [...profileData.entries()]);
       let response;
       if (isEditMode) {
         response = await updateSeekerProfile(profileData);
@@ -157,19 +161,18 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
       setMessage(response.data.message);
       Alert.alert('Success', 'Profile saved successfully!');
 
-      // Construct updated user object
+      // --- Change 2: Update user with new resume path from response ---
       const updatedUser = {
         ...formData,
         skills: formData.skills ? formData.skills.split(', ') : [],
         experience: formData.experience ? parseInt(formData.experience) : 0,
         currentCTC: formData.currentCTC ? parseInt(formData.currentCTC) : 0,
         expectedCTC: formData.expectedCTC ? parseInt(formData.expectedCTC) : 0,
-        resume: response.data.resumePath || (resumeFile ? `/uploads/${resumeFile.name}` : route.params?.user?.resume || ''),
-        _id: response.data.userId || route.params?.user?._id,
-        ...(response.data.user || {}), // Merge additional user data from API if provided
+        resume: response.data.user.resume || (resumeFile ? `/uploads/${resumeFile.name}` : route.params?.user?.resume || ''),
+        _id: response.data.user._id || route.params?.user?._id,
+        ...(response.data.user || {}),
       };
 
-      // Navigate directly to SeekerDashboard with updated user
       navigation.replace('SeekerDashboard', { user: updatedUser });
 
       setResumeFile(null);
@@ -234,51 +237,50 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
             <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
               {isEditMode ? 'Update Your Profile' : 'Create Seeker Profile'}
             </Text>
-            <>
-              {renderInput('Full Name', 'fullName', 'text', 'Enter full name', { required: true })}
-              {renderInput('WhatsApp Number', 'whatsappNumber', 'text', 'Enter WhatsApp number')}
-              {renderInput('Email', 'email', 'email', 'Enter email')}
-              {renderInput('Skill Type', 'skillType', 'text', 'Enter skill type')}
-              {renderInput('Skills', 'skills', 'text', 'Enter skills (comma-separated)')}
-              {renderInput('Experience (years)', 'experience', 'number', 'Enter experience')}
-              {renderInput('Location', 'location', 'text', 'Enter location')}
-              {renderInput('Current CTC', 'currentCTC', 'number', 'Enter current CTC')}
-              {renderInput('Expected CTC', 'expectedCTC', 'number', 'Enter expected CTC')}
-              {renderInput('Notice Period', 'noticePeriod', 'text', 'Enter notice period')}
-              {renderInput('Last Working Date', 'lastWorkingDate', 'text', 'YYYY-MM-DD')}
-              {renderInput('Bio', 'bio', 'text', 'Enter bio', { multiline: true })}
+            {renderInput('Full Name', 'fullName', 'text', 'Enter full name', { required: true })}
+            {renderInput('WhatsApp Number', 'whatsappNumber', 'text', 'Enter WhatsApp number')}
+            {renderInput('Email', 'email', 'email', 'Enter email')}
+            {renderInput('Skill Type', 'skillType', 'text', 'Enter skill type')}
+            {renderInput('Skills', 'skills', 'text', 'Enter skills (comma-separated)')}
+            {renderInput('Experience (years)', 'experience', 'number', 'Enter experience')}
+            {renderInput('Location', 'location', 'text', 'Enter location')}
+            {renderInput('Current CTC', 'currentCTC', 'number', 'Enter current CTC')}
+            {renderInput('Expected CTC', 'expectedCTC', 'number', 'Enter expected CTC')}
+            {renderInput('Notice Period', 'noticePeriod', 'text', 'Enter notice period')}
+            {renderInput('Last Working Date', 'lastWorkingDate', 'text', 'YYYY-MM-DD')}
+            {renderInput('Bio', 'bio', 'text', 'Enter bio', { multiline: true })}
 
-              <Text style={[styles.subtitle, isDarkMode ? styles.darkText : styles.lightText]}>
-                {resumeFileName ? `Selected: ${resumeFileName}` : 'Upload Resume (PDF/DOCX)'}
-              </Text>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={handleFilePick}
-                onPressIn={() => handlePressIn(uploadScale)}
-                onPressOut={() => handlePressOut(uploadScale)}
-                activeOpacity={0.8}
-                disabled={isSubmitting}
-              >
-                <Animated.View style={[styles.buttonWrap, { transform: [{ scale: uploadScale }] }]}>
-                  <Text style={styles.buttonText}>Pick Resume File</Text>
-                </Animated.View>
-              </TouchableOpacity>
+            <Text style={[styles.subtitle, isDarkMode ? styles.darkText : styles.lightText]}>
+              {resumeFileName ? `Selected: ${resumeFileName}` : 'Upload Resume (PDF/DOCX)'}
+            </Text>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleFilePick}
+              onPressIn={() => handlePressIn(uploadScale)}
+              onPressOut={() => handlePressOut(uploadScale)}
+              activeOpacity={0.8}
+              disabled={isSubmitting}
+            >
+              <Animated.View style={[styles.buttonWrap, { transform: [{ scale: uploadScale }] }]}>
+                <Text style={styles.buttonText}>Pick Resume File</Text>
+              </Animated.View>
+            </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.button}
-                onPress={handleSubmitProfile}
-                onPressIn={() => handlePressIn(submitScale)}
-                onPressOut={() => handlePressOut(submitScale)}
-                activeOpacity={0.8}
-                disabled={isSubmitting}
-              >
-                <Animated.View style={[styles.buttonWrap, { transform: [{ scale: submitScale }] }]}>
-                  <Text style={styles.buttonText}>
-                    {isSubmitting ? 'Saving...' : isEditMode ? 'Update Profile' : 'Create Profile'}
-                  </Text>
-                </Animated.View>
-              </TouchableOpacity>
-            </>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={handleSubmitProfile}
+              onPressIn={() => handlePressIn(submitScale)}
+              onPressOut={() => handlePressOut(submitScale)}
+              activeOpacity={0.8}
+              disabled={isSubmitting}
+            >
+              <Animated.View style={[styles.buttonWrap, { transform: [{ scale: submitScale }] }]}>
+                <Text style={styles.buttonText}>
+                  {isSubmitting ? 'Saving...' : isEditMode ? 'Update Profile' : 'Create Profile'}
+                </Text>
+              </Animated.View>
+            </TouchableOpacity>
+
             {message && (
               <Text style={[styles.message, isDarkMode ? styles.darkText : styles.lightText]}>
                 {message}

@@ -1,5 +1,5 @@
-const JobSeeker = require('../models/JobSeeker');
-const JobProvider = require('../models/JobProvider');
+const JobSeeker = require('../models/JobSeeker'); // Path: ./models/JobSeeker.js
+const JobProvider = require('../models/JobProvider'); // Path: ./models/JobProvider.js
 
 exports.createSeekerProfile = async (req, res) => {
   try {
@@ -40,7 +40,8 @@ exports.createSeekerProfile = async (req, res) => {
     // Handle resume upload
     let resumePath = '';
     if (req.file) {
-      resumePath = `/uploads/${req.file.filename}`; // Adjust path as needed for your storage setup
+      resumePath = `/uploads/${req.file.filename}`; // Path matches static serving in server.js
+      console.log('Resume saved at:', resumePath); // Debug log
     }
 
     const seeker = new JobSeeker({
@@ -112,6 +113,7 @@ exports.updateSeekerProfile = async (req, res) => {
       noticePeriod,
       lastWorkingDate,
       bio,
+      resume: existingResume, // Existing resume path from request body
     } = req.body;
 
     if (!_id) {
@@ -124,10 +126,13 @@ exports.updateSeekerProfile = async (req, res) => {
       parsedSkills = skills.split(',').map(s => s.trim()).filter(s => s);
     }
 
-    // Handle resume upload (only update if a new file is provided)
-    let resumePath = undefined;
+    // --- Change 1: Handle resume update correctly ---
+    let resumePath = existingResume; // Default to existing resume
     if (req.file) {
-      resumePath = `/uploads/${req.file.filename}`;
+      resumePath = `/uploads/${req.file.filename}`; // Update only if new file is uploaded
+      console.log('New resume saved at:', resumePath); // Debug log
+    } else {
+      console.log('No new resume uploaded, retaining:', resumePath); // Debug log
     }
 
     const updateData = {
@@ -143,7 +148,7 @@ exports.updateSeekerProfile = async (req, res) => {
       noticePeriod,
       lastWorkingDate,
       bio,
-      resume: resumePath,
+      resume: resumePath, // Use updated or existing resume path
     };
 
     // Remove undefined fields to avoid overwriting with empty values
