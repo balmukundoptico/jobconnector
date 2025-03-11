@@ -8,20 +8,7 @@ const path = require('path');
 dotenv.config();
 
 const app = express();
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Path where files will be saved: ./uploads/
-  },
-  filename: (req, file, cb) => {
-    // Generate a unique filename with original extension
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    const fileExt = path.extname(file.originalname); // Extract extension (e.g., .pdf, .docx)
-    cb(null, `${uniqueSuffix}${fileExt}`); // e.g., 1634567890123-456789123.pdf
-  },
-});
-const upload = multer({ storage: storage });
-
-// const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: 'uploads/' });
 
 // Middleware
 app.use(express.json());
@@ -49,8 +36,6 @@ app.get('/', (req, res) => {
   res.send('Job Connector Backend is running');
 });
 
-app.set('upload', upload);
-
 // Import and mount routes
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
@@ -65,3 +50,4 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
+// working code dont chnage

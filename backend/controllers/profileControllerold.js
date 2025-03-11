@@ -1,5 +1,5 @@
-const JobSeeker = require('../models/JobSeeker'); // Path: ./models/JobSeeker.js
-const JobProvider = require('../models/JobProvider'); // Path: ./models/JobProvider.js
+const JobSeeker = require('../models/JobSeeker');
+const JobProvider = require('../models/JobProvider');
 
 exports.createSeekerProfile = async (req, res) => {
   try {
@@ -40,8 +40,7 @@ exports.createSeekerProfile = async (req, res) => {
     // Handle resume upload
     let resumePath = '';
     if (req.file) {
-      resumePath = `/uploads/${req.file.filename}`; // Path matches static serving in server.js
-      console.log('Resume saved at:', resumePath); // Debug log
+      resumePath = `/uploads/${req.file.filename}`; // Adjust path as needed for your storage setup
     }
 
     const seeker = new JobSeeker({
@@ -113,7 +112,6 @@ exports.updateSeekerProfile = async (req, res) => {
       noticePeriod,
       lastWorkingDate,
       bio,
-      resume: existingResume, // Existing resume path from request body
     } = req.body;
 
     if (!_id) {
@@ -126,13 +124,10 @@ exports.updateSeekerProfile = async (req, res) => {
       parsedSkills = skills.split(',').map(s => s.trim()).filter(s => s);
     }
 
-    // --- Change 1: Handle resume update correctly ---
-    let resumePath = existingResume; // Default to existing resume
+    // Handle resume upload (only update if a new file is provided)
+    let resumePath = undefined;
     if (req.file) {
-      resumePath = `/uploads/${req.file.filename}`; // Update only if new file is uploaded
-      console.log('New resume saved at:', resumePath); // Debug log
-    } else {
-      console.log('No new resume uploaded, retaining:', resumePath); // Debug log
+      resumePath = `/uploads/${req.file.filename}`;
     }
 
     const updateData = {
@@ -148,7 +143,7 @@ exports.updateSeekerProfile = async (req, res) => {
       noticePeriod,
       lastWorkingDate,
       bio,
-      resume: resumePath, // Use updated or existing resume path
+      resume: resumePath,
     };
 
     // Remove undefined fields to avoid overwriting with empty values
@@ -227,3 +222,5 @@ module.exports = {
   updateProviderProfile,
   getProfile,
 };
+
+// working code
