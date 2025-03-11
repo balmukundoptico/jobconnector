@@ -73,23 +73,36 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
     setMessage(`Connected via WhatsApp for ${jobTitle}`);
   };
 
+  // **Change 1**: Fixed resume download for mobile and web, addressing "file exposed beyond app" error
   const handleDownloadResume = async () => {
     if (!user.resume) {
       setMessage('No resume available to download');
       return;
     }
     try {
-      const baseUrl = Platform.OS === 'web' ? 'https://jobconnector-backend.onrender.com' : 'https://jobconnector-backend.onrender.com';
+      const baseUrl = 'https://jobconnector-backend.onrender.com';
       const resumeUrl = `${baseUrl}${user.resume}`;
       console.log('Downloading resume from:', resumeUrl);
+
       if (Platform.OS === 'web') {
         window.open(resumeUrl, '_blank');
         setMessage('Resume opened in new tab');
       } else {
-        const fileUri = `${FileSystem.documentDirectory}resume${user.resume.endsWith('.pdf') ? '.pdf' : '.docx'}`;
-        const { uri } = await FileSystem.downloadAsync(resumeUrl, fileUri);
-        await Linking.openURL(uri);
-        setMessage('Resume downloaded successfully');
+        const fileUri = `${FileSystem.cacheDirectory}resume.pdf`; // Use cache directory instead of document directory
+        const downloadResumable = FileSystem.createDownloadResumable(
+          resumeUrl,
+          fileUri,
+          {},
+          (downloadProgress) => {
+            const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
+            console.log('Download progress:', progress);
+          }
+        );
+        const { uri } = await downloadResumable.downloadAsync();
+        // Use FileSystem.getContentUriAsync to get a content URI for opening the file
+        const contentUri = await FileSystem.getContentUriAsync(uri);
+        await Linking.openURL(contentUri);
+        setMessage('Resume downloaded and opened successfully');
       }
     } catch (error) {
       console.error('Download error:', error);
@@ -101,8 +114,15 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
     navigation.navigate('SeekerProfile', { user });
   };
 
+  // **Change 2**: Changed to navigation.replace to prevent back button on logout
+  // const handleLogout = () => {
+  //   navigation.replace('Home');
+  // };
   const handleLogout = () => {
-    navigation.navigate('Home');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Home' }],
+    });
   };
 
   const handlePressIn = (scale) => Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
@@ -118,11 +138,36 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
     <View style={[styles.container, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
       <Header title="Seeker Dashboard" toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        {/* **Change 3**: Moved Edit Profile and Logout buttons to the top */}
+        <View style={styles.topButtons}>
+          <TouchableOpacity
+            style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+            onPress={handleEditProfile}
+            onPressIn={() => handlePressIn(profileScale)}
+            onPressOut={() => handlePressOut(profileScale)}
+          >
+            <Animated.View style={{ transform: [{ scale: profileScale }] }}>
+              <Text style={styles.buttonText}>Edit Profile</Text>
+            </Animated.View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+            onPress={handleLogout}
+            onPressIn={() => handlePressIn(logoutScale)}
+            onPressOut={() => handlePressOut(logoutScale)}
+          >
+            <Animated.View style={{ transform: [{ scale: logoutScale }] }}>
+              <Text style={styles.buttonText}>Logout</Text>
+            </Animated.View>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.content}>
           {user ? (
             <>
               <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Your Profile</Text>
-              <View style={styles.profileContainer}>
+              {/* **Change 4**: Improved dark mode visibility with darker background */}
+              <View style={[styles.profileContainer, isDarkMode ? styles.darkProfileContainer : styles.lightProfileContainer]}>
                 <Text style={[styles.profileText, isDarkMode ? styles.darkText : styles.lightText]}>
                   Name: {user.fullName || 'N/A'}
                 </Text>
@@ -201,27 +246,6 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
                 )}
                 scrollEnabled={false}
               />
-
-              <TouchableOpacity
-                style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                onPress={handleEditProfile}
-                onPressIn={() => handlePressIn(profileScale)}
-                onPressOut={() => handlePressOut(profileScale)}
-              >
-                <Animated.View style={{ transform: [{ scale: profileScale }] }}>
-                  <Text style={styles.buttonText}>Edit Profile</Text>
-                </Animated.View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                onPress={handleLogout}
-                onPressIn={() => handlePressIn(logoutScale)}
-                onPressOut={() => handlePressOut(logoutScale)}
-              >
-                <Animated.View style={{ transform: [{ scale: logoutScale }] }}>
-                  <Text style={styles.buttonText}>Logout</Text>
-                </Animated.View>
-              </TouchableOpacity>
               {message && <Text style={[styles.message, isDarkMode ? styles.darkText : styles.lightText]}>{message}</Text>}
             </>
           ) : (
@@ -239,9 +263,14 @@ const styles = StyleSheet.create({
   lightContainer: { backgroundColor: '#fff' },
   darkContainer: { backgroundColor: '#111' },
   scrollContent: { paddingBottom: 60, flexGrow: 1 },
+  // **Change 5**: Added topButtons style for button placement
+  topButtons: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 20, marginTop: 10 },
   content: { padding: 10, flexGrow: 1 },
   title: { fontSize: 20, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
-  profileContainer: { padding: 10, backgroundColor: '#f0f0f0', borderRadius: 5, marginBottom: 20 },
+  profileContainer: { padding: 10, borderRadius: 5, marginBottom: 20 },
+  lightProfileContainer: { backgroundColor: '#f0f0f0' },
+  // **Change 6**: Darker background for better contrast in dark mode
+  darkProfileContainer: { backgroundColor: '#333' },
   profileText: { fontSize: 16, marginBottom: 5 },
   input: { borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5 },
   lightInput: { borderColor: '#ccc', color: '#000' },
@@ -260,5 +289,3 @@ const styles = StyleSheet.create({
   lightText: { color: '#000' },
   darkText: { color: '#ddd' },
 });
-
-// working code dont chnage

@@ -389,7 +389,7 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
               renderItem={({ item }) => (
                 <View style={styles.listItem}>
                   <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>
-                    {item.jobTitle || 'Unnamed Job'} - {item.postedBy?.companyName || 'Unknown Provider'}
+                    {item.jobTitle || 'Unnamed Job'} - {item.postedBy?.companyName || user.fullName}
                   </Text>
                   <View style={styles.actions}>
                     <TouchableOpacity
@@ -567,3 +567,7 @@ const styles = StyleSheet.create({
   lightText: { color: '#333' },
   darkText: { color: '#ddd' },
 });
+
+
+//only chnage unknown provideer
+

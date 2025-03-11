@@ -160,8 +160,9 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
     }
   };
 
+  // **Change 7**: Changed to navigation.replace for direct dashboard navigation without back button
   const handleGoToDashboard = () => {
-    navigation.navigate('SeekerDashboard', { user: { ...route.params.user, ...formData, resume: resumeFileName ? `/uploads/${resumeFileName}` : route.params.user?.resume } });
+    navigation.replace('SeekerDashboard', { user: { ...route.params.user, ...formData, resume: resumeFileName ? `/uploads/${resumeFileName}` : route.params.user?.resume } });
   };
 
   const handlePressIn = (scale) => Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
@@ -203,6 +204,7 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
       <Header title={isEditMode ? "Edit Seeker Profile" : "Create Seeker Profile"} toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.main}>
+          {/* **Change 8**: Adjusted dark mode form container for better visibility */}
           <View style={[styles.formContainer, isDarkMode ? styles.darkFormContainer : styles.lightFormContainer]}>
             <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
               {isEditMode ? "Update Your Profile" : "Create Seeker Profile"}
@@ -293,7 +295,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   lightFormContainer: { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' },
-  darkFormContainer: { backgroundColor: '#374151', borderColor: '#4B5563' },
+  // **Change 9**: Darker background for better contrast in dark mode
+  darkFormContainer: { backgroundColor: '#222', borderColor: '#4B5563' },
   title: { fontSize: 24, fontWeight: '600', marginBottom: 24, textAlign: 'center' },
   subtitle: { fontSize: 14, marginBottom: 10 },
   lightText: { color: '#1F2937' },
@@ -303,7 +306,7 @@ const styles = StyleSheet.create({
   labelInactive: { top: 13, left: 10 },
   labelActive: { top: -10, left: 10, transform: [{ translateY: -1 }] },
   lightLabelActive: { backgroundColor: '#FFFFFF' },
-  darkLabelActive: { backgroundColor: '#374151' },
+  darkLabelActive: { backgroundColor: '#222' }, // Match form background
   input: {
     width: '100%',
     height: 45,
@@ -361,5 +364,3 @@ const styles = StyleSheet.create({
 });
 
 export default SeekerProfile;
-
-// working code dont chnage

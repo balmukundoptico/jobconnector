@@ -1,4 +1,3 @@
-// O:\JobConnector\mobileapp\App.js
 import React, { useState, Component } from 'react'; // React core
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native'; // Navigation setup
 import { createStackNavigator } from '@react-navigation/stack'; // Stack navigator
@@ -50,7 +49,10 @@ export default function App() {
           <Stack.Navigator initialRouteName="Home">
             <Stack.Screen 
               name="Home" 
-              options={{ headerShown: false }}
+              options={{
+                headerShown: false, // Hides the header completely
+                headerLeft: () => null, // Explicitly removes back button if header is shown
+              }}
               children={props => <Home {...props} isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />}
             />
             <Stack.Screen 
