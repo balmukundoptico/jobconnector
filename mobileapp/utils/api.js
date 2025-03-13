@@ -93,4 +93,3 @@ export const getPostedJobs = () => api.get('/jobs/posted');
 export const updateJob = (data) => api.post('/jobs/update-job', data);
 
 export default api;
-

@@ -204,73 +204,64 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
   };
 
   const handleEditSeeker = (seeker) => {
-    try {
-      console.log('Editing seeker:', seeker._id);
-      setEditSeeker({ ...seeker });
-    } catch (error) {
-      console.error('handleEditSeeker error:', error.message, error.stack);
-      setMessage('Error preparing seeker edit: ' + error.message);
-    }
+    setEditSeeker(seeker);
   };
 
   const handleSaveSeeker = async () => {
-    try {
-      console.log('Saving seeker:', editSeeker._id);
-      const response = await updateSeekerProfile(editSeeker);
-      console.log('Save seeker response:', response);
-      setMessage('Seeker updated successfully');
-      setSeekers(seekers.map(s => s._id === editSeeker._id ? editSeeker : s));
-      setEditSeeker(null);
-    } catch (error) {
-      console.error('handleSaveSeeker error:', error.message, error.stack);
-      setMessage('Error updating seeker: ' + error.message);
-    }
-  };
+      try {
+        const response = await updateSeekerProfile({ ...editSeeker });
+        setMessage(response.data.message);
+        setSeekers(seekers.map(s => s._id === editSeeker._id ? editSeeker : s));
+        setEditSeeker(null);
+      } catch (error) {
+        setMessage('Error updating seeker: ' + error.message);
+        console.error('Update seeker error:', error); // Added for debugging
+      }
+    };
 
-  const handleEditJob = (job) => {
-    try {
-      console.log('Editing job:', job._id);
-      setEditJob({ ...job });
-    } catch (error) {
-      console.error('handleEditJob error:', error.message, error.stack);
-      setMessage('Error preparing job edit: ' + error.message);
-    }
-  };
+    const handleEditJob = (job) => {
+      setEditJob(job);
+    };
 
   const handleSaveJob = async () => {
-    try {
-      console.log('Saving job:', editJob._id);
-      const payload = {
-        jobId: editJob._id,
-        jobTitle: editJob.jobTitle,
-        skills: editJob.skills,
-        skillType: editJob.skillType,
-        experienceRequired: editJob.experienceRequired,
-        location: editJob.location,
-        maxCTC: editJob.maxCTC,
-        noticePeriod: editJob.noticePeriod,
-        postedBy: editJob.postedBy?._id,
-      };
-      const response = await updateJob(payload);
-      console.log('Save job response:', response);
-      setMessage('Job updated successfully');
-      setJobs(jobs.map(j => j._id === editJob._id ? editJob : j));
-      setEditJob(null);
-    } catch (error) {
-      console.error('handleSaveJob error:', error.message, error.stack);
-      setMessage('Error updating job: ' + error.message);
-    }
-  };
+      try {
+        const payload = {
+          jobId: editJob._id,
+          jobTitle: editJob.jobTitle,
+          skills: editJob.skills,
+          skillType: editJob.skillType,
+          experienceRequired: editJob.experienceRequired,
+          location: editJob.location,
+          maxCTC: editJob.maxCTC,
+          noticePeriod: editJob.noticePeriod,
+          postedBy: editJob.postedBy?._id
+        };
+        const response = await updateJob(payload);
+        setMessage(response.data.message);
+        setJobs(jobs.map(j => j._id === editJob._id ? editJob : j));
+        setEditJob(null);
+      } catch (error) {
+        setMessage('Error updating job: ' + error.message);
+        console.error('Update job error:', error); // Added for debugging
+      }
+    };
 
   const handleLogout = () => {
     try {
       console.log('Logging out user');
-      navigation.navigate('Home');
+      
+      // Reset navigation to Home screen
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
+  
     } catch (error) {
       console.error('handleLogout error:', error.message, error.stack);
       setMessage('Error logging out: ' + error.message);
     }
   };
+  
 
   const handlePressIn = (scale) => {
     Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
@@ -283,6 +274,18 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
   return (
     <View style={[styles.container, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
       <Header title="Admin Dashboard" toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
+      <View style={styles.topActions}>
+                    {/* <TouchableOpacity style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={handleEditProfile} onPressIn={() => handlePressIn(profileScale)} onPressOut={() => handlePressOut(profileScale)} activeOpacity={0.8}>
+                      <Animated.View style={{ transform: [{ scale: profileScale }] }}>
+                        <Text style={styles.buttonText}>Edit Profile</Text>
+                      </Animated.View>
+                    </TouchableOpacity> */}
+                    <TouchableOpacity style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={handleLogout} onPressIn={() => handlePressIn(logoutScale)} onPressOut={() => handlePressOut(logoutScale)} activeOpacity={0.8}>
+                      <Animated.View style={{ transform: [{ scale: logoutScale }] }}>
+                        <Text style={styles.buttonText}>Logout</Text>
+                      </Animated.View>
+                    </TouchableOpacity>
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {user ? (
           <>
@@ -300,7 +303,7 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
                 Total Jobs: {stats.jobs}
               </Text>
             </View>
-
+            
             <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Upload Excel Data</Text>
             <View style={styles.uploadContainer}>
               <TouchableOpacity
@@ -570,4 +573,3 @@ const styles = StyleSheet.create({
 
 
 //only chnage unknown provideer
-

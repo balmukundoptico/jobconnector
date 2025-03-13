@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated, ScrollView, Platform, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  ScrollView,
+  Platform,
+  Alert,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as DocumentPicker from 'expo-document-picker';
 import { createSeekerProfile, updateSeekerProfile } from '../utils/api';
@@ -160,9 +170,19 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
     }
   };
 
-  // **Change 7**: Changed to navigation.replace for direct dashboard navigation without back button
+  // Updated handleGoToDashboard to match ProviderProfile behavior
   const handleGoToDashboard = () => {
-    navigation.replace('SeekerDashboard', { user: { ...route.params.user, ...formData, resume: resumeFileName ? `/uploads/${resumeFileName}` : route.params.user?.resume } });
+    const updatedUser = {
+      ...route?.params?.user, // Preserve original user data, including _id
+      ...formData, // Apply updated form data
+      _id: route?.params?.user?._id, // Explicitly ensure _id is included
+      skills: formData.skills ? formData.skills.split(',').map(s => s.trim()) : route?.params?.user?.skills || [], // Format skills as array
+      experience: formData.experience ? parseInt(formData.experience) : route?.params?.user?.experience || 0, // Ensure numeric
+      currentCTC: formData.currentCTC ? parseInt(formData.currentCTC) : route?.params?.user?.currentCTC || 0, // Ensure numeric
+      expectedCTC: formData.expectedCTC ? parseInt(formData.expectedCTC) : route?.params?.user?.expectedCTC || 0, // Ensure numeric
+      resume: resumeFileName ? `/uploads/${resumeFileName}` : route?.params?.user?.resume, // Updated resume path
+    };
+    navigation.navigate('SeekerDashboard', { user: updatedUser });
   };
 
   const handlePressIn = (scale) => Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
@@ -170,13 +190,15 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
 
   const renderInput = (label, name, type = 'text', placeholder, additionalProps = {}) => (
     <View style={styles.inputContainer}>
-      <Text style={[
-        styles.label,
-        isDarkMode ? styles.darkText : styles.lightText,
-        (focusedField === name || formData[name]) ? styles.labelActive : styles.labelInactive,
-        isDarkMode && (focusedField === name || formData[name]) ? styles.darkLabelActive : {},
-        !isDarkMode && (focusedField === name || formData[name]) ? styles.lightLabelActive : {},
-      ]}>
+      <Text
+        style={[
+          styles.label,
+          isDarkMode ? styles.darkText : styles.lightText,
+          focusedField === name || formData[name] ? styles.labelActive : styles.labelInactive,
+          isDarkMode && (focusedField === name || formData[name]) ? styles.darkLabelActive : {},
+          !isDarkMode && (focusedField === name || formData[name]) ? styles.lightLabelActive : {},
+        ]}
+      >
         {label}
       </Text>
       <TextInput
@@ -201,13 +223,16 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
 
   return (
     <View style={[styles.container, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
-      <Header title={isEditMode ? "Edit Seeker Profile" : "Create Seeker Profile"} toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
+      <Header
+        title={isEditMode ? 'Edit Seeker Profile' : 'Create Seeker Profile'}
+        toggleDarkMode={toggleDarkMode}
+        isDarkMode={isDarkMode}
+      />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.main}>
-          {/* **Change 8**: Adjusted dark mode form container for better visibility */}
           <View style={[styles.formContainer, isDarkMode ? styles.darkFormContainer : styles.lightFormContainer]}>
             <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
-              {isEditMode ? "Update Your Profile" : "Create Seeker Profile"}
+              {isEditMode ? 'Update Your Profile' : 'Create Seeker Profile'}
             </Text>
             {!profileCreated ? (
               <>
@@ -248,9 +273,7 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
                   disabled={isSubmitting}
                 >
                   <Animated.View style={[styles.buttonWrap, { transform: [{ scale: submitScale }] }]}>
-                    <Text style={styles.buttonText}>
-                      {isSubmitting ? 'Saving...' : 'Save Profile'}
-                    </Text>
+                    <Text style={styles.buttonText}>{isSubmitting ? 'Saving...' : 'Save Profile'}</Text>
                   </Animated.View>
                 </TouchableOpacity>
               </>
@@ -295,7 +318,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   lightFormContainer: { backgroundColor: '#FFFFFF', borderColor: '#E5E7EB' },
-  // **Change 9**: Darker background for better contrast in dark mode
   darkFormContainer: { backgroundColor: '#222', borderColor: '#4B5563' },
   title: { fontSize: 24, fontWeight: '600', marginBottom: 24, textAlign: 'center' },
   subtitle: { fontSize: 14, marginBottom: 10 },
@@ -306,7 +328,7 @@ const styles = StyleSheet.create({
   labelInactive: { top: 13, left: 10 },
   labelActive: { top: -10, left: 10, transform: [{ translateY: -1 }] },
   lightLabelActive: { backgroundColor: '#FFFFFF' },
-  darkLabelActive: { backgroundColor: '#222' }, // Match form background
+  darkLabelActive: { backgroundColor: '#222' },
   input: {
     width: '100%',
     height: 45,
@@ -364,5 +386,3 @@ const styles = StyleSheet.create({
 });
 
 export default SeekerProfile;
-
-//working code
