@@ -151,8 +151,14 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
 
       console.log('Sending profile data to server:', [...profileData.entries()]);
       let response;
+      // if (isEditMode) {
+      //   response = await updateSeekerProfile(profileData);
+      // } else {
+      //   response = await createSeekerProfile(profileData);
+      // }
+
       if (isEditMode) {
-        response = await updateSeekerProfile(profileData);
+        response = await updateSeekerProfile({ ...profileData, _id: route.params.user._id });
       } else {
         response = await createSeekerProfile(profileData);
       }
@@ -172,17 +178,7 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
 
   // Updated handleGoToDashboard to match ProviderProfile behavior
   const handleGoToDashboard = () => {
-    const updatedUser = {
-      ...route?.params?.user, // Preserve original user data, including _id
-      ...formData, // Apply updated form data
-      _id: route?.params?.user?._id, // Explicitly ensure _id is included
-      skills: formData.skills ? formData.skills.split(',').map(s => s.trim()) : route?.params?.user?.skills || [], // Format skills as array
-      experience: formData.experience ? parseInt(formData.experience) : route?.params?.user?.experience || 0, // Ensure numeric
-      currentCTC: formData.currentCTC ? parseInt(formData.currentCTC) : route?.params?.user?.currentCTC || 0, // Ensure numeric
-      expectedCTC: formData.expectedCTC ? parseInt(formData.expectedCTC) : route?.params?.user?.expectedCTC || 0, // Ensure numeric
-      resume: resumeFileName ? `/uploads/${resumeFileName}` : route?.params?.user?.resume, // Updated resume path
-    };
-    navigation.navigate('SeekerDashboard', { user: updatedUser });
+    navigation.navigate('SeekerDashboard', { user: { ...route.params.user, ...formData } });
   };
 
   const handlePressIn = (scale) => Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();

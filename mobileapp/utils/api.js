@@ -22,7 +22,17 @@ export const requestOTP = (data) => api.post('/auth/request-otp', data);
 export const verifyOTP = (data) => api.post('/auth/verify-otp', data);
 
 // Profile
-export const getProfile = (data) => api.get('/profile', { params: data });
+export const getProfile = async (data) => {
+  try {
+    // const response = await axios.get('http://192.168.31.124:5000/api/auth/profile', { params: data });
+    const response = await axios.get('https://jobconnector-backend.onrender.com/api/auth/profile', { params: data });
+    
+    return response;
+  } catch (error) {
+    console.error('getProfile error:', error);
+    throw error;
+  }
+};
 
 // Updated createSeekerProfile to handle FormData for resume upload
 export const createSeekerProfile = (data) => {
@@ -90,6 +100,13 @@ export const saveSearch = (data) => api.post('/jobs/save-search', data);
 export const applyToJob = (data) => api.post('/jobs/apply-job', data);
 export const getApplicants = (jobId) => api.get('/jobs/applicants', { params: { jobId } });
 export const getPostedJobs = () => api.get('/jobs/posted');
-export const updateJob = (data) => api.post('/jobs/update-job', data);
-
+export const updateJob = async (data) => {
+  try {
+    const response = await axios.put(`/api/jobs/${data._id}`, data); // Changed to PUT and dynamic ID
+    return response;
+  } catch (error) {
+    console.error('updateJob error:', error);
+    throw error;
+  }
+};
 export default api;

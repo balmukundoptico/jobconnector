@@ -15,15 +15,7 @@ exports.postJob = async (req, res) => {
   } = req.body;
 
   try {
-    // Handle skills as either a string or an array
-    let skillsArray = skills;
-    if (typeof skills === 'string') {
-      skillsArray = skills.split(',').map(skill => skill.trim());
-    } else if (!Array.isArray(skills)) {
-      return res.status(400).json({ message: 'Skills must be a string or array' });
-    }
-
-    const job = new JobPosting({
+      const job = new JobPosting({
       jobTitle,
       skillType,
       skills: skillsArray,
@@ -265,9 +257,7 @@ exports.updateJob = async (req, res) => {
     }
 
     if (jobTitle !== undefined) job.jobTitle = jobTitle;
-    if (skills !== undefined) {
-      job.skills = typeof skills === 'string' ? skills.split(',').map(s => s.trim()) : skills;
-    }
+    if (skills !== undefined) job.skills = skills;
     if (skillType !== undefined) job.skillType = skillType;
     if (experienceRequired !== undefined) job.experienceRequired = Number(experienceRequired);
     if (location !== undefined) job.location = location;

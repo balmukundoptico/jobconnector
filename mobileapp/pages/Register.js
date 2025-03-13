@@ -85,17 +85,15 @@ const Register = ({ isDarkMode, toggleDarkMode }) => {
       console.log('Bypass OTP Payload:', payload);
       const response = await verifyOTP(payload);
       console.log('Bypass OTP Response:', response.data);
-
+  
       if (response.data.isNewUser) {
         // New user: redirect to profile creation
         setMessage('New user detected. Redirecting to profile creation...');
         navigation.navigate(`${role === 'seeker' ? 'SeekerProfile' : 'ProviderProfile'}`, { contact, isEmail });
       } else {
-        // Old user: fetch profile and redirect to dashboard
-        const profileResponse = await getProfile({ role, [isEmail ? 'email' : 'whatsappNumber']: contact });
-        console.log('Profile Response:', profileResponse.data);
-        setMessage('Profile exists. Redirecting to dashboard...');
-        setTimeout(() => navigation.navigate(`${role === 'seeker' ? 'SeekerDashboard' : 'ProviderDashboard'}`, { user: profileResponse.data }), 2000);
+        // Existing user: redirect to login page
+        setMessage('User found, please login.');
+        setTimeout(() => navigation.navigate('AuthForm', { role, contact, isEmail }), 2000);
       }
     } catch (error) {
       console.error('Bypass OTP Error:', error.response?.data || error.message);

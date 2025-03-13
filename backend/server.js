@@ -13,7 +13,7 @@ const upload = multer({ dest: 'uploads/' });
 // Middleware
 app.use(express.json());
 app.use(cors());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // can be comment Serve uploaded files statically
 
 // MongoDB connection using local instance
 // mongoose.connect('mongodb://localhost:27017/jobconnector', {

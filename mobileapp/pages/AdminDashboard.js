@@ -208,41 +208,59 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
   };
 
   const handleSaveSeeker = async () => {
-      try {
-        const response = await updateSeekerProfile({ ...editSeeker });
-        setMessage(response.data.message);
-        setSeekers(seekers.map(s => s._id === editSeeker._id ? editSeeker : s));
-        setEditSeeker(null);
-      } catch (error) {
-        setMessage('Error updating seeker: ' + error.message);
-        console.error('Update seeker error:', error); // Added for debugging
-      }
-    };
+    try {
+      const formData = new FormData();
+      formData.append('_id', editSeeker._id);
+      formData.append('fullName', editSeeker.fullName || '');
+      formData.append('whatsappNumber', editSeeker.whatsappNumber || '');
+      formData.append('email', editSeeker.email || '');
+      // Add other fields if needed, matching backend expectations
+      formData.append('skillType', editSeeker.skillType || 'IT');
+      formData.append('skills', Array.isArray(editSeeker.skills) ? editSeeker.skills.join(', ') : editSeeker.skills || '');
+      formData.append('experience', editSeeker.experience ? editSeeker.experience.toString() : '0');
+      formData.append('location', editSeeker.location || '');
+      formData.append('currentCTC', editSeeker.currentCTC ? editSeeker.currentCTC.toString() : '0');
+      formData.append('expectedCTC', editSeeker.expectedCTC ? editSeeker.expectedCTC.toString() : '0');
+      formData.append('noticePeriod', editSeeker.noticePeriod || '');
+      formData.append('lastWorkingDate', editSeeker.lastWorkingDate || '');
+      formData.append('bio', editSeeker.bio || '');
+  
+      const response = await updateSeekerProfile(formData);
+      setMessage(response.data.message);
+      setSeekers(seekers.map(s => s._id === editSeeker._id ? { ...editSeeker, skills: editSeeker.skills || [] } : s));
+      setEditSeeker(null);
+    } catch (error) {
+      setMessage('Error updating seeker: ' + error.message);
+      console.error('Update seeker error:', error);
+    }
+  };
 
     const handleEditJob = (job) => {
       setEditJob(job);
     };
 
-  const handleSaveJob = async () => {
+    const handleSaveJob = async () => {
       try {
         const payload = {
-          jobId: editJob._id,
-          jobTitle: editJob.jobTitle,
-          skills: editJob.skills,
-          skillType: editJob.skillType,
-          experienceRequired: editJob.experienceRequired,
-          location: editJob.location,
-          maxCTC: editJob.maxCTC,
-          noticePeriod: editJob.noticePeriod,
-          postedBy: editJob.postedBy?._id
+          _id: editJob._id, // Changed jobId to _id to match seeker update convention
+          jobTitle: editJob.jobTitle || '',
+          skills: Array.isArray(editJob.skills) ? editJob.skills : editJob.skills ? editJob.skills.split(', ') : [],
+          skillType: editJob.skillType || '',
+          experienceRequired: editJob.experienceRequired ? parseInt(editJob.experienceRequired) : 0,
+          location: editJob.location || '',
+          maxCTC: editJob.maxCTC ? parseInt(editJob.maxCTC) : 0,
+          noticePeriod: editJob.noticePeriod || '',
+          postedBy: editJob.postedBy?._id || editJob.postedBy // Ensure postedBy is an ID or object
         };
+        console.log('Updating job with payload:', payload); // Debug payload
         const response = await updateJob(payload);
+        console.log('Update job response:', response.data); // Debug response
         setMessage(response.data.message);
-        setJobs(jobs.map(j => j._id === editJob._id ? editJob : j));
+        setJobs(jobs.map(j => j._id === editJob._id ? { ...editJob, skills: payload.skills } : j));
         setEditJob(null);
       } catch (error) {
         setMessage('Error updating job: ' + error.message);
-        console.error('Update job error:', error); // Added for debugging
+        console.error('Update job error:', error);
       }
     };
 
@@ -264,11 +282,15 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
   
 
   const handlePressIn = (scale) => {
-    Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
+    if (scale) {
+      Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
+    }
   };
 
   const handlePressOut = (scale) => {
-    Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+    if (scale) {
+     Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+    }
   };
 
   return (
