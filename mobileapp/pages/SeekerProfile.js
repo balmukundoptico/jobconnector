@@ -151,14 +151,8 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
 
       console.log('Sending profile data to server:', [...profileData.entries()]);
       let response;
-      // if (isEditMode) {
-      //   response = await updateSeekerProfile(profileData);
-      // } else {
-      //   response = await createSeekerProfile(profileData);
-      // }
-
       if (isEditMode) {
-        response = await updateSeekerProfile({ ...profileData, _id: route.params.user._id });
+        response = await updateSeekerProfile(profileData); // Pass FormData directly
       } else {
         response = await createSeekerProfile(profileData);
       }
@@ -168,6 +162,9 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
       Alert.alert('Success', 'Profile saved successfully!');
       setResumeFile(null);
       setResumeFileName('');
+      if (isEditMode) {
+        navigation.navigate('SeekerDashboard', { user: response.data.user });
+      }
     } catch (error) {
       console.error('API error:', error.response?.data || error.message);
       setMessage('Error saving profile: ' + (error.response?.data?.message || error.message));
@@ -176,7 +173,6 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
     }
   };
 
-  // Updated handleGoToDashboard to match ProviderProfile behavior
   const handleGoToDashboard = () => {
     navigation.navigate('SeekerDashboard', { user: { ...route.params.user, ...formData } });
   };
@@ -230,7 +226,7 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
             <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
               {isEditMode ? 'Update Your Profile' : 'Create Seeker Profile'}
             </Text>
-            {!profileCreated ? (
+            {!profileCreated || isEditMode ? (
               <>
                 {renderInput('Full Name', 'fullName', 'text', 'Enter full name', { required: true })}
                 {renderInput('WhatsApp Number', 'whatsappNumber', 'text', 'Enter WhatsApp number')}
@@ -382,3 +378,5 @@ const styles = StyleSheet.create({
 });
 
 export default SeekerProfile;
+
+// working code edit profile
