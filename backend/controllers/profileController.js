@@ -138,7 +138,8 @@ const updateSeekerProfile = async (req, res) => {
       noticePeriod,
       lastWorkingDate,
       bio,
-      resume: resumePath,
+      // resume: resumePath,
+      ...(resumePath && { resume: resumePath }),
     };
 
     Object.keys(updateData).forEach(key => updateData[key] === undefined && delete updateData[key]);
