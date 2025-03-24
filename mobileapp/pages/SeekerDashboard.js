@@ -14,27 +14,16 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
   const [suggestedJobs, setSuggestedJobs] = useState([]);
   const [message, setMessage] = useState('');
   const [appliedJobs, setAppliedJobs] = useState([]);
+  const [showAppliedJobs, setShowAppliedJobs] = useState(false);
   const navigation = useNavigation();
   const [applyScales, setApplyScales] = useState({});
-  const [showAppliedJobs, setShowAppliedJobs] = useState(false);
-  const [showJobDetails, setShowJobDetails] = useState(false);
   const [connectScales, setConnectScales] = useState({});
   const [profileScale] = useState(new Animated.Value(1));
   const [logoutScale] = useState(new Animated.Value(1));
   const [downloadScale] = useState(new Animated.Value(1));
-  const [selectedJob, setSelectedJob] = useState(null);
   const [searchScale] = useState(new Animated.Value(1));
-
-  const handleGetAppliedJobs = async () => {
-    try {
-      const seekerId = user?._id;
-      const response = await getJobsAppliedFor(seekerId);
-      setAppliedJobs(response.data.data || []);
-      setShowAppliedJobs(true);
-    } catch (err) {
-      console.error('Error fetching applied jobs:', err);
-    }
-  };
+  const [showJobDetails, setShowJobDetails] = useState(false);
+  const [selectedJob, setSelectedJob] = useState(null);
 
   useEffect(() => {
     if (!route?.params?.contact) {
@@ -99,22 +88,30 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
     }
   };
 
+  const handleGetAppliedJobs = async () => {
+    try {
+      const seekerId = user?._id;
+      const response = await getJobsAppliedFor(seekerId);
+      setAppliedJobs(response.data.data || []);
+      setShowAppliedJobs(true);
+    } catch (err) {
+      console.error('Error fetching applied jobs:', err);
+    }
+  };
+
   const handleSearch = async () => {
     try {
       const searchData = {
-        skills: searchSkills ? searchSkills.split(',').map(skill => skill.trim()).filter(skill => skill) : '',
-        location: searchLocation ? searchLocation.trim() : '',
+        skills: searchSkills.split(',').map(skill => skill.trim()).filter(skill => skill),
+        location: searchLocation.trim(),
       };
-      console.log("search data", searchData);
       const response = await searchJobs(searchData);
-      console.log("search jobs response", response);
-      const filteredJobs = Array.isArray(response.data) 
-      ? response.data.filter(job => job && job._id).map(job => ({
+      const filteredJobs = response.data
+        .filter(job => job && job._id)
+        .map(job => ({
           ...job,
           applied: appliedJobs.some(applied => applied.jobId === job._id),
-        }))
-      : [];
-
+        }));
       console.log('Searched Jobs:', filteredJobs);
       setSuggestedJobs(filteredJobs.slice(0, 5)); // Update suggested jobs with top 5 search results
       setMessage(filteredJobs.length === 0 ? 'No jobs found' : '');
@@ -123,12 +120,6 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
       setMessage('Error searching jobs: ' + (error.response?.data?.message || error.message));
     }
   };
-
-  const handleViewJobDetails =(job) =>{
-    console.log("selected job in modal", job);
-    setShowJobDetails(true);
-    setSelectedJob(job);
-  }
 
   const handleApply = async (jobId) => {
     try {
@@ -204,6 +195,12 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
     if (typeof skills === 'string') return skills;
     return 'N/A';
   };
+
+  const handleViewJobDetails =(job) =>{
+    console.log("selected job in modal", job);
+    setShowJobDetails(true);
+    setSelectedJob(job);
+  }
 
   const renderJobItem = ({ item }) => (
     <View style={styles.jobItem}>
@@ -372,7 +369,6 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
           )}
         </View>
       </ScrollView>
-
       {/* Applied Jobs Modal */}
       <Modal visible={showAppliedJobs} transparent animationType="slide">
           <View style={styles.modalContainer}>
@@ -406,9 +402,9 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
               <Text style={styles.modalTitle}>Job Details</Text>
               {selectedJob && (
                 <>
-                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Title:</Text> {selectedJob.jobTitle || 'N/A'}</Text>
-                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Company:</Text> {selectedJob.companyName || 'N/A'}</Text>
-                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Location:</Text> {selectedJob.location || 'N/A'}</Text>
+                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Title:</Text> {selectedJob.jobTitle}</Text>
+                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Company:</Text> {selectedJob.companyName}</Text>
+                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Location:</Text> {selectedJob.location}</Text>
                   <Text style={styles.jobDetailText}><Text style={styles.bold}>Salary:</Text> {selectedJob.salary || 'Not disclosed'}</Text>
                 </>
               )}
@@ -418,7 +414,6 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
             </View>
           </View>
         </Modal>
-
       <Footer isDarkMode={isDarkMode} />
     </View>
   );
@@ -453,20 +448,19 @@ const styles = StyleSheet.create({
   loading: { fontSize: 16, textAlign: 'center' },
   lightText: { color: '#000' },
   darkText: { color: '#ddd' },
+  modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalContent: { width: '80%', backgroundColor: '#fff', padding: 20, borderRadius: 10 },
+  modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
+  appliedJobItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, borderBottomWidth: 1, borderColor: '#ddd' },
+  appliedJobText: { fontSize: 16 },
+  jobDetails: { flex: 1 },
   
-modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
-modalContent: { width: '80%', backgroundColor: '#fff', padding: 20, borderRadius: 10 },
-modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10, textAlign: 'center' },
-appliedJobItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, borderBottomWidth: 1, borderColor: '#ddd' },
-appliedJobText: { fontSize: 16 },
-jobDetails: { flex: 1 },
+  detailsButton: { backgroundColor: '#007AFF', padding: 8, borderRadius: 5 },
+  detailsButtonText: { color: '#fff', fontSize: 14 },
 
-detailsButton: { backgroundColor: '#007AFF', padding: 8, borderRadius: 5 },
-detailsButtonText: { color: '#fff', fontSize: 14 },
-
-jobDetailText: { fontSize: 16, marginBottom: 5 },
-bold: { fontWeight: 'bold' },
-
-closeButton: { backgroundColor: '#007AFF', marginTop: 10, padding: 10, borderRadius: 5, alignItems: 'center' },
+  jobDetailText: { fontSize: 16, marginBottom: 5 },
+  bold: { fontWeight: 'bold' },
+  
+  closeButton: { backgroundColor: '#007AFF', marginTop: 10, padding: 10, borderRadius: 5, alignItems: 'center' },
 }) 
 // working code with search

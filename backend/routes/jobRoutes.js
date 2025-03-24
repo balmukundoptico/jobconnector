@@ -1,8 +1,9 @@
 // O:\JobConnector\backend\routes\jobRoutes.js
 const express = require('express');
 const { 
-  postJob, 
-  searchJobs, 
+  postJob,
+  searchJobs,
+  getAppliedJobsBySeeker, 
   sendWhatsAppMessage, 
   getTrendingSkills, 
   sendMassEmail, 
@@ -15,7 +16,6 @@ const {
   getApplicants,
   updateJob, // Added updateJob
   updateSeekerProfile, // Added updateSeekerProfile
-  getAppliedJobsBySeeker,
   toggleJobAvailability
 } = require('../controllers/jobController');
 const multer = require('multer');
@@ -35,7 +35,6 @@ router.post('/delete-seeker', deleteSeeker);
 router.post('/delete-job', deleteJob);
 router.post('/save-search', saveSearch);
 router.post('/apply', applyToJob);
-router.get('/get/appliedfor', getAppliedJobsBySeeker)
 
 // Updated routes for mobile app compatibility
 router.get('/posted', async (req, res) => {
@@ -50,10 +49,11 @@ router.get('/posted', async (req, res) => {
 router.post('/delete', deleteJob);
 router.post('/apply-job', applyToJob);
 router.get('/applicants', getApplicants);
+router.get('/get/appliedfor', getAppliedJobsBySeeker);
+router.post('/change/availibility', toggleJobAvailability)
 
 // New routes for updating jobs and seekers
-router.put('/update-job', updateJob);
+router.post('/update-job', updateJob);
 router.post('/update-seeker', updateSeekerProfile);
-router.post('/change/availibility', toggleJobAvailability);
 
 module.exports = router;

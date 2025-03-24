@@ -16,20 +16,20 @@ app.use(cors());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // can be comment Serve uploaded files statically
 
 // MongoDB connection using local instance
-// mongoose.connect('mongodb://localhost:27017/jobconnector', {
-//   useNewUrlParser: true,
-//   useUnifiedTopology: true,
-// })
-//   .then(() => console.log('MongoDB connected locally'))
-//   .catch((err) => console.log('MongoDB connection error:', err));
-
-// Comment out MongoDB Atlas connection for later use
 mongoose.connect('mongodb+srv://balmukundoptico:lets12help@job-connector.exb7v.mongodb.net', {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
   .then(() => console.log('MongoDB Atlas connected'))
-  .catch((err) => console.log('MongoDB Atlas connection error:', err));
+  .catch((err) => console.log('MongoDB connection error:', err));
+
+// Comment out MongoDB Atlas connection for later use
+// mongoose.connect('mongodb+srv://balmukundoptico:lets12help@job-connector.exb7v.mongodb.net', {
+//   useNewUrlParser: true,
+//   useUnifiedTopology: true,
+// })
+//   .then(() => console.log('MongoDB Atlas connected'))
+//   .catch((err) => console.log('MongoDB Atlas connection error:', err));
 
 // Root route
 app.get('/', (req, res) => {

@@ -54,8 +54,11 @@ const ProviderProfile = ({ isDarkMode, toggleDarkMode, route }) => {
     }
   };
 
+  // const handleGoToDashboard = () => {
+  //   navigation.navigate('ProviderDashboard', { user: { ...route.params.user, ...formData } });
+  // };
   const handleGoToDashboard = () => {
-    navigation.navigate('ProviderDashboard', { user: { ...route.params.user, ...formData } });
+    navigation.navigate("Home");
   };
 
   const handlePressIn = (scale) => { Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start(); };

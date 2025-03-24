@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 
 const jobPostingSchema = new mongoose.Schema({
   jobTitle: { type: String, required: true },
+  jobDescription: { type: String }, // Added
   skillType: { type: String },
   skills: [String],
   experienceRequired: { type: String },
@@ -11,7 +12,6 @@ const jobPostingSchema = new mongoose.Schema({
   noticePeriod: { type: String },
   postedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'JobProvider' },
   applicants: [{ seekerId: { type: mongoose.Schema.Types.ObjectId, ref: 'JobSeeker' } }],
-  available : { type:Boolean, default:true}
 }, { timestamps: true });
 
 module.exports = mongoose.model('JobPosting', jobPostingSchema);

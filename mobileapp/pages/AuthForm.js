@@ -34,7 +34,6 @@ export default function AuthForm({ isDarkMode, toggleDarkMode, route }) {
       setMessage(response.data.message); // Show message
       setOtpSent(true); // Mark OTP sent
       setServerOtp(response.data.serverOtp);
-      console.log(response);
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error requesting OTP');
     }

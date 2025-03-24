@@ -3,12 +3,11 @@ const JobSeeker = require('../models/JobSeeker');
 const JobProvider = require('../models/JobProvider');
 const nodemailer = require('nodemailer');
 const xlsx = require('xlsx');
-
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: { user: 'krishnabmk96@gmail.com', pass: 'bucg kaci cxmu luam' },
 });
-
+//chnages
 exports.postJob = async (req, res) => {
   const {
     jobTitle, skillType, skills, experienceRequired, location, maxCTC, noticePeriod, postedBy
@@ -47,35 +46,24 @@ exports.searchJobs = async (req, res) => {
 
   try {
     const query = {};
-
-    if (Array.isArray(skills) && skills.length > 0) {
-      query.skills = { $in: skills };
-  } else if (typeof skills === 'string' && skills.trim() !== '') {
-      query.skills = { $in: skills.split(',').map(s => s.trim()) };
-  }
-
+    if (skills) query.skills = { $in: skills.split(',') };
     if (experience) query.experienceRequired = { $lte: Number(experience) };
     if (location) query.location = new RegExp(location, 'i');
     if (minCTC) query.maxCTC = { $gte: Number(minCTC) };
     if (maxCTC) query.maxCTC = { $lte: Number(maxCTC) };
     if (noticePeriod) query.noticePeriod = new RegExp(noticePeriod, 'i');
-
-    if (typeof filters === 'string' && filters.trim() !== '') {
-        const filterArr = filters.split(',');
-        if (filterArr.includes('viewed')) query.viewed = true;
-        if (filterArr.includes('new')) {
-            query.createdAt = { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
-        }
+    if (filters) {
+      const filterArr = filters.split(',');
+      if (filterArr.includes('viewed')) query.viewed = true;
+      if (filterArr.includes('new')) query.createdAt = { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
     }
 
-      const jobs = await JobPosting.find(query).populate('postedBy', 'companyName hrName hrWhatsappNumber');
-      res.json(jobs);
-
-    } catch (error) {
-        console.error('Error searching jobs:', error);
-        res.status(500).json({ message: 'Error searching jobs' });
-    }
-
+    const jobs = await JobPosting.find(query).populate('postedBy', 'companyName hrName hrWhatsappNumber');
+    res.json(jobs);
+  } catch (error) {
+    console.error('Error searching jobs:', error);
+    res.status(500).json({ message: 'Error searching jobs' });
+  }
 };
 
 exports.applyToJob = async (req, res) => {
@@ -106,6 +94,28 @@ exports.applyToJob = async (req, res) => {
   }
 };
 
+exports.toggleJobAvailability = async (req, res) => {
+  try {
+    const { jobId } = req.query;  
+    console.log("job id for changing activeness", jobId);
+
+    const job = await JobPosting.findOne({ _id: jobId });
+    if(job.available === true){
+      job.available = false;
+    }
+    else{
+      job.available = true;
+    }
+    await job.save();
+
+    res.json({ success: true, message: "Job availability toggled", job });
+  } catch (error) {
+    console.error("Error toggling job availability:", error);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+};
+
+//jobController.js
 exports.getApplicants = async (req, res) => {
   const { providerId, jobId } = req.params.providerId ? req.params : req.query;
   try {
@@ -123,6 +133,34 @@ exports.getApplicants = async (req, res) => {
   } catch (error) {
     console.error('Error fetching applicants:', error);
     res.status(500).json({ message: 'Error fetching applicants' });
+  }
+};
+
+exports.getAppliedJobsBySeeker = async (req, res) => {
+  const { seekerId } = req.query; // Use req.query instead of req.params
+
+  if (!seekerId) {
+    return res.status(400).json({ success: false, message: 'Seeker ID is required' });
+  }
+
+  try {
+    const seeker = await JobSeeker.findById(seekerId);
+    if (!seeker) {
+      return res.status(404).json({ success: false, message: 'Seeker not found' });
+    }
+
+    const appliedJobs = await JobPosting.find({ 'applicants.seekerId': seekerId })
+      .populate('postedBy', 'companyName hrName hrWhatsappNumber')
+      .select('jobTitle skillType location maxCTC noticePeriod postedBy');
+
+    res.status(200).json({
+      success: true,
+      message: 'Applied jobs fetched successfully',
+      data: appliedJobs,
+    });
+  } catch (error) {
+    console.error('Error fetching applied jobs:', error);
+    res.status(500).json({ success: false, message: 'Error fetching applied jobs' });
   }
 };
 
@@ -268,7 +306,6 @@ exports.deleteJob = async (req, res) => {
 };
 
 exports.updateJob = async (req, res) => {
-  console.log('Request body:', req.body); // Debug request payload
   const { _id, jobTitle, skills, skillType, experienceRequired, location, maxCTC, noticePeriod, postedBy } = req.body;
 
   try {
@@ -277,7 +314,6 @@ exports.updateJob = async (req, res) => {
       return res.status(404).json({ message: 'Job not found' });
     }
 
-    // Update job fields
     if (jobTitle !== undefined) job.jobTitle = jobTitle;
     if (skills !== undefined) job.skills = skills;
     if (skillType !== undefined) job.skillType = skillType;
@@ -288,7 +324,7 @@ exports.updateJob = async (req, res) => {
     if (postedBy !== undefined) job.postedBy = postedBy;
 
     await job.save();
-    res.json({ message: 'Job updated successfully', job }); // Ensure JSON response
+    res.json({ message: 'Job updated successfully', job });
   } catch (error) {
     console.error('Error updating job:', error);
     res.status(500).json({ message: 'Error updating job' });
@@ -314,55 +350,6 @@ exports.updateSeekerProfile = async (req, res) => {
   } catch (error) {
     console.error('Error updating seeker:', error);
     res.status(500).json({ message: 'Error updating seeker', error: error.message });
-  }
-};
-
-exports.getAppliedJobsBySeeker = async (req, res) => {
-  const { seekerId } = req.query; // Use req.query instead of req.params
-
-  if (!seekerId) {
-    return res.status(400).json({ success: false, message: 'Seeker ID is required' });
-  }
-
-  try {
-    const seeker = await JobSeeker.findById(seekerId);
-    if (!seeker) {
-      return res.status(404).json({ success: false, message: 'Seeker not found' });
-    }
-
-    const appliedJobs = await JobPosting.find({ 'applicants.seekerId': seekerId })
-      .populate('postedBy', 'companyName hrName hrWhatsappNumber')
-      .select('jobTitle skillType location maxCTC noticePeriod postedBy');
-
-    res.status(200).json({
-      success: true,
-      message: 'Applied jobs fetched successfully',
-      data: appliedJobs,
-    });
-  } catch (error) {
-    console.error('Error fetching applied jobs:', error);
-    res.status(500).json({ success: false, message: 'Error fetching applied jobs' });
-  }
-};
-
-exports.toggleJobAvailability = async (req, res) => {
-  try {
-    const { jobId } = req.query;  
-    console.log("job id for changing activeness", jobId);
-
-    const job = await JobPosting.findOne({ _id: jobId });
-    if(job.available === true){
-      job.available = false;
-    }
-    else{
-      job.available = true;
-    }
-    await job.save();
-
-    res.json({ success: true, message: "Job availability toggled", job });
-  } catch (error) {
-    console.error("Error toggling job availability:", error);
-    res.status(500).json({ success: false, message: "Server error" });
   }
 };
 

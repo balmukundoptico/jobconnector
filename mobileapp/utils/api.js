@@ -2,8 +2,11 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 
 // Local backend URL with your IP
+// API_URL = "http://localhost:5000/api";
+API_URL = "https://jobconnector-backend.onrender.com/api";
 // const BASE_URL = Platform.OS === 'web' ? 'http://localhost:5000/api' : 'http://192.168.31.124:5000/api';
 const BASE_URL = Platform.OS === 'web' ? 'https://jobconnector-backend.onrender.com/api' : 'https://jobconnector-backend.onrender.com/api';
+
 // Default axios instance for JSON requests
 const api = axios.create({
   baseURL: BASE_URL,
@@ -21,19 +24,30 @@ export const requestOTP = (data) => api.post('/auth/request-otp', data);
 export const verifyOTP = (data) => api.post('/auth/verify-otp', data);
 
 // Profile
+// export const getProfile = async (data) => {
+//   try {
+//     // const response = await axios.get('http://192.168.31.124:5000/api/auth/profile', { params: data });
+//     const response = await axios.get('https://jobconnector-backend.onrender.com/api/auth/profile', { params: data });
+    
+//     return response;
+//   } catch (error) {
+//     console.error('getProfile error:', error);
+//     throw error;
+//   }
+// };
+
 export const getProfile = async (data) => {
   try {
-    // const response = await axios.get('http://192.168.31.124:5000/api/auth/profile', { params: data });
-    const response = await axios.get('https://jobconnector-backend.onrender.com/api/auth/profile', { params: data });
-    
+    // Changed to use api instance instead of raw axios for consistency
+    const response = await api.get('/auth/profile', { params: data });
     return response;
   } catch (error) {
-    console.error('getProfile error:', error);
+    console.error('getProfile error:', error.response?.data || error.message);
     throw error;
   }
 };
 
-// Updated createSeekerProfile to handle FormData for resume upload
+// Seeker profile with FormData for resume upload
 export const createSeekerProfile = (data) => {
   console.log('Sending createSeekerProfile request with data:', [...data.entries()]);
   return axios.post(`${BASE_URL}/profile/seeker`, data, {
@@ -57,8 +71,48 @@ export const createProviderProfile = (data) => api.post('/profile/provider', dat
 export const updateProviderProfile = (data) => api.post('/profile/provider/update', data);
 
 // Jobs
-export const postJob = (data) => api.post('/jobs/post', data);
-export const searchJobs = (data) => api.get('/jobs/search', { params: data });
+// export const postJob = async (jobData) => {
+//   // Log the full request details for debugging
+//   console.log('Sending postJob request:', { 
+//     url: `${API_URL}/jobs/post`, 
+//     data: jobData, 
+//     headers: { Authorization: `Bearer ${localStorage.getItem('token') || 'none'}` }
+//   });
+//   try {
+//     // Make the POST request to /jobs/post
+//     const response = await api.post('/jobs/post', jobData);
+//     // Log the successful response data
+//     console.log('postJob response:', response.data);
+//     // Return the response data directly (consistent with current behavior)
+//     return response.data;
+//   } catch (error) {
+//     // Log the full error details, including status and response data if available
+//     console.error('postJob error:', {
+//       message: error.message,
+//       status: error.response?.status,
+//       data: error.response?.data || 'No response data'
+//     });
+//     // Throw the error with detailed info (backend response or generic error)
+//     throw error.response?.data || error;
+//   }
+// };
+export const postJob = (data) => api.post('/jobs/post', data); //new line
+
+export const searchJobs = async (data) => {
+  try {
+    const params = {
+      ...data,
+      skills: data.skills ? data.skills.join(",") : undefined,
+    };
+    console.log("Sending searchJobs request with params:", params);
+    const response = await api.get("/jobs/search", { params }); // Fixed to /search
+    return response;
+  } catch (error) {
+    console.error("searchJobs error:", error.response?.data || error.message);
+    throw error;
+  }
+};
+
 export const sendWhatsAppMessage = (data) => api.post('/jobs/whatsapp', data);
 export const getTrendingSkills = () => api.get('/jobs/trending-skills');
 export const sendMassEmail = (data) => api.post('/jobs/mass-email', data);
@@ -93,25 +147,42 @@ export const uploadExcel = (formData) => {
     });
 };
 
+export const getJobsAppliedFor = (seekerId) => api.get('/jobs/get/appliedfor', {params:{seekerId}});
+
 export const deleteSeeker = (data) => api.post('/jobs/delete-seeker', data);
 export const deleteJob = (data) => api.post('/jobs/delete', data);
 export const saveSearch = (data) => api.post('/jobs/save-search', data);
 export const applyToJob = (data) => api.post('/jobs/apply-job', data);
-export const getJobsAppliedFor = (seekerId) => api.get('/jobs/get/appliedfor', {params:{seekerId}});
-export const getApplicants = (providerId, jobId) => api.get('/jobs/applicants', { params: {providerId, jobId } });
-export const getPostedJobs = () => api.get('/jobs/posted');
-export const updateJob = async (data) => {
+export const getPostedJobs = async () => {
   try {
-    const response = await api.put('/jobs/update-job', data); // Changed to PUT and dynamic ID
+    const response = await api.get('/jobs/posted');
     return response;
   } catch (error) {
-    console.error('updateJob error:', error);
+    console.error('getPostedJobs error:', error.response?.data || error.message);
     throw error;
   }
 };
+// api.js
 
 export const changeJobAvailibility = (data) => {
   return axios.post(`${BASE_URL}/jobs/change/availibility`, data);
 };
 
+export const getApplicants = (providerId, jobId) => api.get('/jobs/applicants', { params: {providerId, jobId } });
+
+export const updateJob = async (jobData) => {
+  console.log('Sending updateJob request:', { url: `${API_URL}/jobs/update-job`, data: jobData, method: 'POST' });
+  try {
+    const response = await api.post('/jobs/update-job', jobData);
+    console.log('updateJob response:', response.data);
+    return response; // Return full response, not just response.data
+  } catch (error) {
+    console.error('updateJob error:', error.response?.data || error.message);
+    throw error.response?.data || error;
+  }
+};
 export default api;
+
+
+
+// Working code with admin and with seeker

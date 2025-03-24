@@ -50,11 +50,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
     fetchData();
   }, [route, navigation]);
 
-  useEffect(() => {
-    console.log("Updated Jobs Array:", postedJobs);
-  }, [postedJobs]); 
-   
-  
   const fetchData = async () => {
     try {
       if (!user) {
@@ -66,12 +61,9 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
         setUser(response.data);
       }
       const jobsResponse = await searchJobs({});
-      const userJobs = jobsResponse.data.filter(job => job.postedBy?._id === user?._id && job.postedBy);
-      for(job of userJobs){
-        console.log("job id : ", job);
-      }
+      const userJobs = jobsResponse.data.filter(job => job.postedBy?._id === user?._id);
       console.log("jobs posted by you", userJobs);
-      setPostedJobs((prevJobs) => [...prevJobs, ...userJobs]);
+      setPostedJobs(userJobs);
       const applicantsResponse = await getApplicants(user?._id);
       setApplicants(applicantsResponse.data);
       const scales = {};
@@ -83,54 +75,40 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
   };
 
   const handlePostJob = async () => {
+    console.log("user is ", user);
     const jobData = {
       jobTitle,
       jobDescription,
       skillType,
-      skills: skills.split(",").map((s) => s.trim()),
-      experienceRequired: parseInt(experienceRequired) || 0,
+      skills: skills.split(',').map(s => s.trim()), 
+      experienceRequired: parseInt(experienceRequired) || 0, 
       location,
-      maxCTC: parseInt(maxCTC) || 0,
+      maxCTC: parseInt(maxCTC) || 0, 
       noticePeriod,
-      postedBy: { _id: user?._id },
+      // postedBy : user._id,       **********old 
+      postedBy: {_id : user?._id}     //*******new one by rajvardhan */
     };
   
-    console.log("Job Data:", jobData); // Log the data being sent
+    console.log('Job Data:', jobData); // Log the data being sent
   
     try {
       const response = await postJob(jobData);
-      Alert.alert("Success", "Job posted successfully");
-      console.log("created job", response.data.job);
-  
-      const newJob = response.data.job;
-      if (!newJob) {
-        console.log("No new job data received");
-        return;
-      }
-  
-      // ✅ Set state first before calling fetchData()
-      setPostedJobs((prevJobs) => [...prevJobs, newJob]);
-  
-      // ✅ Delay fetchData() slightly to allow state update
-      setTimeout(fetchData, 500);
-  
-      console.log("now posted job array is", postedJobs); // ❌ This will still log the old state
-  
+      Alert.alert('Success', 'Job posted successfully');
+      console.log('Job created successfully:', response);
       // Reset form fields
-      setJobTitle("");
-      setJobDescription("");
-      setSkills("");
-      setExperienceRequired("");
-      setLocation("");
-      setMaxCTC("");
-      setNoticePeriod("");
-  
+      setJobTitle('');
+      setJobDescription('');
+      setSkills('');
+      setExperienceRequired('');
+      setLocation('');
+      setMaxCTC('');
+      setNoticePeriod('');
+      fetchData(); // Refresh the job list
     } catch (error) {
-      Alert.alert("Error", "Failed to post job: " + error.message);
-      console.error("❌ Error posting job:", error);
+      Alert.alert('Error', 'Failed to post job: ' + error.message);
+      console.error('Error posting job:', error);
     }
   };
-  
 
   const handleUpdateJob = async () => {
     if (!selectedJobForEdit) {
@@ -211,8 +189,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
   const handleSearchSeekers = async () => {
     try {
       const response = await searchSeekers({ skills: seekerQuery, location: locationQuery });
-      if(!response || !response.data) console.log("unable to set seekers");
-      console.log("setting seeker's with data", response.data);
       setSeekers(response.data);
       const scales = {};
       response.data.forEach(seeker => { scales[seeker._id] = new Animated.Value(1); });
@@ -230,7 +206,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
     try {
       const providerId = user?._id;
       const response = await getApplicants(providerId, jobId);
-      console.log("getapplicatns response", response);
       setApplicants(response.data);
       setSelectedJobId(jobId);
     } catch (error) {
@@ -239,9 +214,8 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
   };
 
   const handleViewSeekerProfile = (seekerId) => {
-    // if seeker if not present then don't show
-    if (!seekerId) {
-      Alert.alert('Error', 'No seeker selected.');
+    if(!seekerId){
+      Alert.alert('Error', 'No seeker Selected');
       return;
     }
     setSelectedJobId(null); // Close the Applicants modal
@@ -296,17 +270,11 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
 
   const handleActiveInactiveJob = async (job) => {
     console.log("this job has to be marked inactive", job);
-    const jobId = job._id;
     try{
-      console.log(jobId);
-      const response = await changeJobAvailibility(job._id);
-      setPostedJobs(prevJobs => 
-        prevJobs.map(job => 
-            job._id === jobId ? { ...job, available: newAvailability } : job
-        )
-    );
-    console.log("activeness changed of", response);
+      const jobId = job._id;
+      const response = await changeJobAvailibility(jobId);
       console.log("job availibility response", response);
+      setPostedJobs(prevJobs=> prevJobs.map(job => job._id === jobId ? {...job, available: newAvailability} : job))
     } catch(err){
       console.log("error while changing availibility", err);
     }
@@ -542,8 +510,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                 }}
                 scrollEnabled={false}
               />
-              
-              {/* changes - use applicants.find instead of seekers.find */}
+
               {/* Seeker Profile Modal */}
               <Modal visible={showSeekerProfileModal} transparent={true} animationType="slide" onRequestClose={() => setShowSeekerProfileModal(false)}>
                 <View style={[styles.modalOverlay, { zIndex: 10 }]}>
@@ -784,4 +751,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10
   },
 
-});
+}); //chnaged

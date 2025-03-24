@@ -49,7 +49,9 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
         const seekersResponse = await searchSeekers({});
         console.log('Seekers response:', seekersResponse.data);
 
+        console.log('Fetching jobs...');
         const jobsResponse = await searchJobs({});
+        console.log('Jobs response:', JSON.stringify(jobsResponse.data, null, 2));
 
         setSeekers(seekersResponse.data || []);
         setJobs(jobsResponse.data || []);
@@ -202,7 +204,6 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
   };
 
   const handleEditSeeker = (seeker) => {
-    console.log("Selected Seeker for edit", seeker);
     setEditSeeker(seeker);
   };
 
@@ -249,6 +250,7 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
           location: editJob.location || '',
           maxCTC: editJob.maxCTC ? parseInt(editJob.maxCTC) : 0,
           noticePeriod: editJob.noticePeriod || '',
+          postedBy: editJob.postedBy?._id || editJob.postedBy // Ensure postedBy is an ID or object
         };
         console.log('Updating job with payload:', payload); // Debug payload
         const response = await updateJob(payload);
@@ -454,213 +456,80 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
 
             {/* Edit Seeker Modal */}
             <Modal visible={!!editSeeker} transparent={true} animationType="slide">
-            <View style={styles.modalOverlay}>
-              <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
-                <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Edit Seeker</Text>
-
-                {/* Full Name */}
-                <Text style={styles.label}>Full Name</Text>
-                <TextInput
-                  style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                  value={editSeeker?.fullName || ''}
-                  onChangeText={(text) => setEditSeeker((prev) => ({ ...prev, fullName: text }))}
-                  placeholder="Full Name"
-                  placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                />
-
-                {/* WhatsApp Number */}
-                <Text style={styles.label}>WhatsApp Number</Text>
-                <TextInput
-                  style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                  value={editSeeker?.whatsappNumber || ''}
-                  onChangeText={(text) => setEditSeeker((prev) => ({ ...prev, whatsappNumber: text }))}
-                  placeholder="WhatsApp Number"
-                  keyboardType="phone-pad"
-                  placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                />
-
-                {/* Email */}
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                  value={editSeeker?.email || ''}
-                  onChangeText={(text) => setEditSeeker((prev) => ({ ...prev, email: text }))}
-                  placeholder="Email"
-                  keyboardType="email-address"
-                  placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                />
-
-                {/* Skills */}
-                <Text style={styles.label}>Skills</Text>
-                <TextInput
-                  style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                  value={editSeeker?.skills?.length ? editSeeker.skills.join(', ') : ''}
-                  onChangeText={(text) => setEditSeeker((prev) => ({ ...prev, skills: text.split(', ') }))}
-                  placeholder="Enter Skills (comma-separated)"
-                  placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                />
-
-                {/* Current CTC */}
-                <Text style={styles.label}>Current CTC (LPA)</Text>
-                <TextInput
-                  style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                  value={editSeeker?.currentCTC?.toString() || ''}
-                  onChangeText={(text) => setEditSeeker((prev) => ({ ...prev, currentCTC: parseFloat(text) || 0 }))}
-                  placeholder="Current CTC (in LPA)"
-                  keyboardType="numeric"
-                  placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                />
-
-                {/* Expected CTC */}
-                <Text style={styles.label}>Expected CTC (LPA)</Text>
-                <TextInput
-                  style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                  value={editSeeker?.expectedCTC?.toString() || ''}
-                  onChangeText={(text) => setEditSeeker((prev) => ({ ...prev, expectedCTC: parseFloat(text) || 0 }))}
-                  placeholder="Expected CTC (in LPA)"
-                  keyboardType="numeric"
-                  placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                />
-
-                {/* Experience */}
-                <Text style={styles.label}>Experience (Years)</Text>
-                <TextInput
-                  style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                  value={editSeeker?.experience?.toString() || ''}
-                  onChangeText={(text) => setEditSeeker((prev) => ({ ...prev, experience: parseInt(text) || 0 }))}
-                  placeholder="Experience in Years"
-                  keyboardType="numeric"
-                  placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                />
-
-                {/* Location */}
-                <Text style={styles.label}>Location</Text>
-                <TextInput
-                  style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                  value={editSeeker?.location || ''}
-                  onChangeText={(text) => setEditSeeker((prev) => ({ ...prev, location: text }))}
-                  placeholder="Location"
-                  placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                />
-
-                {/* Notice Period */}
-                <Text style={styles.label}>Notice Period</Text>
-                <TextInput
-                  style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                  value={editSeeker?.noticePeriod?.toString() || ''}
-                  onChangeText={(text) => setEditSeeker((prev) => ({ ...prev, noticePeriod: text }))}
-                  placeholder="Notice Period (e.g., 30 days, Immediate)"
-                  placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                />
-
-                {/* Save Button */}
-                <TouchableOpacity
-                  style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                  onPress={handleSaveSeeker}
-                >
-                  <Text style={styles.buttonText}>Save</Text>
-                </TouchableOpacity>
-
-                {/* Cancel Button */}
-                <TouchableOpacity
-                  style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                  onPress={() => setEditSeeker(null)}
-                >
-                  <Text style={styles.buttonText}>Cancel</Text>
-                </TouchableOpacity>
+              <View style={styles.modalOverlay}>
+                <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
+                  <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Edit Seeker</Text>
+                  <TextInput
+                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                    value={editSeeker?.fullName || ''}
+                    onChangeText={(text) => setEditSeeker({ ...editSeeker, fullName: text })}
+                    placeholder="Full Name"
+                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                  />
+                  <TextInput
+                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                    value={editSeeker?.whatsappNumber || ''}
+                    onChangeText={(text) => setEditSeeker({ ...editSeeker, whatsappNumber: text })}
+                    placeholder="WhatsApp Number"
+                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                  />
+                  <TextInput
+                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                    value={editSeeker?.email || ''}
+                    onChangeText={(text) => setEditSeeker({ ...editSeeker, email: text })}
+                    placeholder="Email"
+                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                  />
+                  <TouchableOpacity
+                    style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+                    onPress={handleSaveSeeker}
+                  >
+                    <Text style={styles.buttonText}>Save</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+                    onPress={() => setEditSeeker(null)}
+                  >
+                    <Text style={styles.buttonText}>Cancel</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          </Modal>
-
-
+            </Modal>
 
             {/* Edit Job Modal */}
             <Modal visible={!!editJob} transparent={true} animationType="slide">
               <View style={styles.modalOverlay}>
                 <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
                   <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Edit Job</Text>
-
-                  {editJob?.jobTitle && (
-                    <>
-                      <Text style={styles.label}>Job Title</Text>
-                      <TextInput
-                        style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                        value={editJob.jobTitle}
-                        onChangeText={(text) => setEditJob({ ...editJob, jobTitle: text })}
-                        placeholder="Enter Job Title"
-                        placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                      />
-                    </>
-                  )}
-
-                  {editJob?.skills?.length > 0 && (
-                    <>
-                      <Text style={styles.label}>Skills</Text>
-                      <TextInput
-                        style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                        value={editJob.skills.join(', ')}
-                        onChangeText={(text) => setEditJob({ ...editJob, skills: text.split(', ') })}
-                        placeholder="Enter Skills (comma-separated)"
-                        placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                      />
-                    </>
-                  )}
-
-                  {editJob?.location && (
-                    <>
-                      <Text style={styles.label}>Location</Text>
-                      <TextInput
-                        style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                        value={editJob.location}
-                        onChangeText={(text) => setEditJob({ ...editJob, location: text })}
-                        placeholder="Enter Location"
-                        placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                      />
-                    </>
-                  )}
-
-                  {editJob?.experienceRequired && (
-                    <>
-                      <Text style={styles.label}>Experience Required (years)</Text>
-                      <TextInput
-                        style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                        value={editJob.experienceRequired.toString()}
-                        onChangeText={(text) => setEditJob({ ...editJob, experienceRequired: parseInt(text) || 0 })}
-                        placeholder="Enter Experience Required"
-                        keyboardType="numeric"
-                        placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                      />
-                    </>
-                  )}
-
-                  {editJob?.maxCTC && (
-                    <>
-                      <Text style={styles.label}>Max CTC</Text>
-                      <TextInput
-                        style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                        value={editJob.maxCTC.toString()}
-                        onChangeText={(text) => setEditJob({ ...editJob, maxCTC: parseFloat(text) || 0 })}
-                        placeholder="Enter Max CTC"
-                        keyboardType="numeric"
-                        placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                      />
-                    </>
-                  )}
-
-                  {editJob?.noticePeriod && (
-                    <>
-                      <Text style={styles.label}>Notice Period (days)</Text>
-                      <TextInput
-                        style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                        value={editJob.noticePeriod.toString()}
-                        onChangeText={(text) => setEditJob({ ...editJob, noticePeriod: parseInt(text) || 0 })}
-                        placeholder="Enter Notice Period"
-                        keyboardType="numeric"
-                        placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                      />
-                    </>
-                  )}
-
+                  <TextInput
+                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                    value={editJob?.jobTitle || ''}
+                    onChangeText={(text) => setEditJob({ ...editJob, jobTitle: text })}
+                    placeholder="Job Title"
+                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                  />
+                  <TextInput
+                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                    value={editJob?.skills?.join(', ') || ''}
+                    onChangeText={(text) => setEditJob({ ...editJob, skills: text.split(', ') })}
+                    placeholder="Skills (comma-separated)"
+                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                  />
+                  <TextInput
+                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                    value={editJob?.location || ''}
+                    onChangeText={(text) => setEditJob({ ...editJob, location: text })}
+                    placeholder="Location"
+                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                  />
+                  <TextInput
+                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                    value={editJob?.experienceRequired?.toString() || ''}
+                    onChangeText={(text) => setEditJob({ ...editJob, experienceRequired: parseInt(text) || 0 })}
+                    placeholder="Experience Required (years)"
+                    keyboardType="numeric"
+                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                  />
                   <TouchableOpacity
                     style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
                     onPress={handleSaveJob}
@@ -676,8 +545,6 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
                 </View>
               </View>
             </Modal>
-
-
           </>
         ) : (
           <Text style={[styles.loading, isDarkMode ? styles.darkText : styles.lightText]}>Loading profile...</Text>
