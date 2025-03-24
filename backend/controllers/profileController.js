@@ -216,4 +216,8 @@ module.exports = {
   updateSeekerProfile,
   updateProviderProfile,
   getProfile,
+<<<<<<< HEAD
 };
+=======
+}; 
+>>>>>>> d187275 (all working)

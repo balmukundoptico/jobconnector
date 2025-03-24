@@ -4,7 +4,6 @@ import { Platform } from 'react-native';
 // Local backend URL with your IP
 // const BASE_URL = Platform.OS === 'web' ? 'http://localhost:5000/api' : 'http://192.168.31.124:5000/api';
 const BASE_URL = Platform.OS === 'web' ? 'https://jobconnector-backend.onrender.com/api' : 'https://jobconnector-backend.onrender.com/api';
-
 // Default axios instance for JSON requests
 const api = axios.create({
   baseURL: BASE_URL,
@@ -98,15 +97,21 @@ export const deleteSeeker = (data) => api.post('/jobs/delete-seeker', data);
 export const deleteJob = (data) => api.post('/jobs/delete', data);
 export const saveSearch = (data) => api.post('/jobs/save-search', data);
 export const applyToJob = (data) => api.post('/jobs/apply-job', data);
-export const getApplicants = (jobId) => api.get('/jobs/applicants', { params: { jobId } });
+export const getJobsAppliedFor = (seekerId) => api.get('/jobs/get/appliedfor', {params:{seekerId}});
+export const getApplicants = (providerId, jobId) => api.get('/jobs/applicants', { params: {providerId, jobId } });
 export const getPostedJobs = () => api.get('/jobs/posted');
 export const updateJob = async (data) => {
   try {
-    const response = await axios.put(`/api/jobs/${data._id}`, data); // Changed to PUT and dynamic ID
+    const response = await api.put('/jobs/update-job', data); // Changed to PUT and dynamic ID
     return response;
   } catch (error) {
     console.error('updateJob error:', error);
     throw error;
   }
 };
+
+export const changeJobAvailibility = (data) => {
+  return axios.post(`${BASE_URL}/jobs/change/availibility`, data);
+};
+
 export default api;

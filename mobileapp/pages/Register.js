@@ -31,6 +31,7 @@ const Register = ({ isDarkMode, toggleDarkMode }) => {
       const response = await requestOTP(payload);
       setServerOtp(response.data.serverOtp);
       setMessage(response.data.message);
+      console.log(response);
       setOtpSent(true);
     } catch (error) {
       console.error('OTP Request Error:', error.response?.data || error.message);
@@ -57,6 +58,7 @@ const Register = ({ isDarkMode, toggleDarkMode }) => {
       setMessage(response.data.message);
 
       if (response.data.message === 'OTP verification successful') {
+        console.log("navigating to provider profile with");
         navigation.navigate(`${role === 'seeker' ? 'SeekerProfile' : 'ProviderProfile'}`, { contact, isEmail });
       }
     } catch (error) {

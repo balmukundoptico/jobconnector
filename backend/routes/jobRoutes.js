@@ -14,7 +14,9 @@ const {
   applyToJob, 
   getApplicants,
   updateJob, // Added updateJob
-  updateSeekerProfile // Added updateSeekerProfile
+  updateSeekerProfile, // Added updateSeekerProfile
+  getAppliedJobsBySeeker,
+  toggleJobAvailability
 } = require('../controllers/jobController');
 const multer = require('multer');
 
@@ -33,7 +35,7 @@ router.post('/delete-seeker', deleteSeeker);
 router.post('/delete-job', deleteJob);
 router.post('/save-search', saveSearch);
 router.post('/apply', applyToJob);
-router.get('/applicants/:providerId', getApplicants);
+router.get('/get/appliedfor', getAppliedJobsBySeeker)
 
 // Updated routes for mobile app compatibility
 router.get('/posted', async (req, res) => {
@@ -50,7 +52,8 @@ router.post('/apply-job', applyToJob);
 router.get('/applicants', getApplicants);
 
 // New routes for updating jobs and seekers
-router.post('/update-job', updateJob);
+router.put('/update-job', updateJob);
 router.post('/update-seeker', updateSeekerProfile);
+router.post('/change/availibility', toggleJobAvailability);
 
 module.exports = router;
