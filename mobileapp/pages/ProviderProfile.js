@@ -40,25 +40,31 @@ const ProviderProfile = ({ isDarkMode, toggleDarkMode, route }) => {
       setMessage('Please fill in company name and HR name');
       return;
     }
+  
     try {
       let response;
       if (isEditMode) {
-        response = await updateProviderProfile({ ...formData, _id: route.params.user._id });
+        response = await updateProviderProfile({ 
+          ...formData, 
+          _id: route.params.user._id 
+        });
       } else {
         response = await createProviderProfile(formData);
       }
+  
       setMessage(response.data.message);
-      setProfileCreated(true);
+      
+      // Navigate to ProviderDashboard after successful submission
+      navigation.navigate('ProviderDashboard', { 
+        user: response.data.user || { // Use API response or fallback to form data
+          ...formData,
+          _id: isEditMode ? route.params.user._id : response.data.user?._id
+        }
+      });
+  
     } catch (error) {
-      setMessage('Error saving profile: ' + error.message);
+      setMessage('Error saving profile: ' + (error.response?.data?.message || error.message));
     }
-  };
-
-  // const handleGoToDashboard = () => {
-  //   navigation.navigate('ProviderDashboard', { user: { ...route.params.user, ...formData } });
-  // };
-  const handleGoToDashboard = () => {
-    navigation.navigate("Home");
   };
 
   const handlePressIn = (scale) => { Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start(); };

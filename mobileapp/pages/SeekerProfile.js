@@ -150,38 +150,34 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
       profileData.append("noticePeriod", formData.noticePeriod || "");
       profileData.append("lastWorkingDate", formData.lastWorkingDate || "");
       profileData.append("bio", formData.bio || "");
-
+  
       if (resumeFile) {
-        profileData.append("resume", resumeFile, resumeFile.name); // Consistent for web/mobile
-        console.log("Resume file appended:", {
-          uri: resumeFile.uri || "N/A (web)",
-          name: resumeFile.name,
-          type: resumeFile.type,
-        });
+        profileData.append("resume", resumeFile, resumeFile.name);
       }
-
+  
       if (isEditMode) {
         profileData.append("_id", route.params.user._id);
       }
-
-      console.log("Sending profile data to server:", [
-        ...profileData.entries(),
-      ]);
+  
       let response;
       if (isEditMode) {
         response = await updateSeekerProfile(profileData);
       } else {
         response = await createSeekerProfile(profileData);
       }
-
+  
       setMessage(response.data.message);
       setProfileCreated(true);
-      Alert.alert("Success", "Profile saved successfully!");
-      setResumeFile(null);
-      setResumeFileName("");
-      if (isEditMode) {
-        navigation.navigate("SeekerDashboard", { user: response.data.user });
-      }
+      
+      // Navigate to SeekerDashboard with user data
+      navigation.navigate("SeekerDashboard", { 
+        user: response.data.user || {
+          ...formData,
+          _id: isEditMode ? route.params.user._id : response.data.user?._id
+        },
+        contact: formData.whatsappNumber || formData.email
+      });
+  
     } catch (error) {
       console.error("API error:", error.response?.data || error.message);
       setMessage(
