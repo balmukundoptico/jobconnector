@@ -105,8 +105,49 @@ export const searchJobs = async (data) => {
       skills: data.skills ? data.skills.join(",") : undefined,
     };
     console.log("Sending searchJobs request with params:", params);
-    const response = await api.get("/jobs/search", { params }); // Fixed to /search
-    return response;
+
+    // Fetch all jobs if skills are provided, otherwise use filters
+    const response = await api.get("/jobs/search", { 
+      params: data.skills ? {} : params // Fetch all jobs if skills search, else use filters
+    });
+    let jobs = response.data;
+
+    // Client-side filtering for partial, case-insensitive skill matches
+    if (data.skills && Array.isArray(data.skills) && data.skills.length > 0) {
+      // Function to remove spaces and lowercase a string
+      const normalize = (str) => str.replace(/\s+/g, '').toLowerCase();
+
+      // If multiple terms (comma-separated), require all to match
+      if (data.skills.length > 1) {
+        const skillTerms = data.skills.map(skill => normalize(skill.trim()));
+        console.log("Comma-separated skill terms:", skillTerms);
+        jobs = jobs.filter(job => 
+          job.skills && Array.isArray(job.skills) && 
+          skillTerms.every(term => 
+            job.skills.some(skill => normalize(skill).includes(term))
+          )
+        );
+      } else {
+        // Single term: match as a whole, ignoring spaces
+        const searchTerm = normalize(data.skills[0].trim());
+        console.log("Single skill term (normalized):", searchTerm);
+        jobs = jobs.filter(job => 
+          job.skills && Array.isArray(job.skills) && 
+          job.skills.some(skill => normalize(skill).includes(searchTerm))
+        );
+      }
+    }
+
+    // Apply location filter client-side if provided
+    if (data.location) {
+      const locationLower = data.location.trim().toLowerCase();
+      jobs = jobs.filter(job => 
+        job.location && job.location.toLowerCase().includes(locationLower)
+      );
+    }
+
+    console.log("Filtered jobs:", jobs);
+    return { ...response, data: jobs }; // Return filtered results in response format
   } catch (error) {
     console.error("searchJobs error:", error.response?.data || error.message);
     throw error;
