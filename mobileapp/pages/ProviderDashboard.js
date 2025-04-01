@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Animated, Modal, Linking, ScrollView, Platform, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as FileSystem from 'expo-file-system';
-import { getProfile, postJob, searchJobs, updateProviderProfile, sendMassEmail, searchSeekers, saveSearch, getApplicants, updateJob, deleteJob, changeJobAvailibility } from '../utils/api';
+import { getProfile, postJob, searchJobs, updateProviderProfile, searchSeekers, getApplicants, updateJob, deleteJob, changeJobAvailibility } from '../utils/api';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
@@ -17,23 +17,19 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
   const [location, setLocation] = useState('');
   const [maxCTC, setMaxCTC] = useState('');
   const [noticePeriod, setNoticePeriod] = useState('');
-  const [whatsappNumber, setWhatsappNumber] = useState('');
-  const [emailSubject, setEmailSubject] = useState('');
-  const [emailBody, setEmailBody] = useState('');
   const [seekerQuery, setSeekerQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
   const [seekers, setSeekers] = useState([]);
-  const [selectedSeekers, setSelectedSeekers] = useState([]);
   const [message, setMessage] = useState('');
   const [postedJobs, setPostedJobs] = useState([]);
   const [applicants, setApplicants] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [selectedSeekerId, setSelectedSeekerId] = useState(null);
   const [selectedJobForEdit, setSelectedJobForEdit] = useState(null);
+  const [showPostJobModal, setShowPostJobModal] = useState(false); // New state for job post modal
+  const [jobFilter, setJobFilter] = useState('All'); // New state for job filter
   const navigation = useNavigation();
   const [postScale] = useState(new Animated.Value(1));
-  const [whatsappScale] = useState(new Animated.Value(1));
-  const [emailScale] = useState(new Animated.Value(1));
   const [searchScale] = useState(new Animated.Value(1));
   const [profileScale] = useState(new Animated.Value(1));
   const [logoutScale] = useState(new Animated.Value(1));
@@ -75,27 +71,24 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
   };
 
   const handlePostJob = async () => {
-    console.log("user is ", user);
     const jobData = {
       jobTitle,
       jobDescription,
       skillType,
-      skills: skills.split(',').map(s => s.trim()), 
-      experienceRequired: parseInt(experienceRequired) || 0, 
+      skills: skills.split(',').map(s => s.trim()),
+      experienceRequired: parseInt(experienceRequired) || 0,
       location,
-      maxCTC: parseInt(maxCTC) || 0, 
+      maxCTC: parseInt(maxCTC) || 0,
       noticePeriod,
-      // postedBy : user._id,       **********old 
-      postedBy: {_id : user?._id}     //*******new one by rajvardhan */
+      postedBy: { _id: user?._id },
     };
-  
-    console.log('Job Data:', jobData); // Log the data being sent
-  
+
+    console.log('Job Data:', jobData);
+
     try {
       const response = await postJob(jobData);
       Alert.alert('Success', 'Job posted successfully');
       console.log('Job created successfully:', response);
-      // Reset form fields
       setJobTitle('');
       setJobDescription('');
       setSkills('');
@@ -103,7 +96,8 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
       setLocation('');
       setMaxCTC('');
       setNoticePeriod('');
-      fetchData(); // Refresh the job list
+      setShowPostJobModal(false); // Close modal
+      fetchData(); // Refresh job list
     } catch (error) {
       Alert.alert('Error', 'Failed to post job: ' + error.message);
       console.error('Error posting job:', error);
@@ -115,26 +109,24 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
       Alert.alert('Error', 'No job selected for editing.');
       return;
     }
-  
+
     const jobData = {
       jobTitle,
       jobDescription,
       skillType,
-      skills: skills.split(',').map(s => s.trim()), // Convert skills string to array
+      skills: skills.split(',').map(s => s.trim()),
       experienceRequired: parseInt(experienceRequired) || 0,
       location,
       maxCTC: parseInt(maxCTC) || 0,
       noticePeriod,
       postedBy: user?._id,
-      _id: selectedJobForEdit._id, // Include the job ID for updating
+      _id: selectedJobForEdit._id,
     };
-  
+
     try {
-      const response = await updateJob(jobData); // Call the API to update the job
+      const response = await updateJob(jobData);
       Alert.alert('Success', 'Job updated successfully');
       console.log('Job updated successfully:', response);
-  
-      // Reset form fields and close the modal
       setJobTitle('');
       setJobDescription('');
       setSkills('');
@@ -143,8 +135,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
       setMaxCTC('');
       setNoticePeriod('');
       setSelectedJobForEdit(null);
-  
-      // Refresh the job list
       fetchData();
     } catch (error) {
       Alert.alert('Error', 'Failed to update job: ' + error.message);
@@ -161,31 +151,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
     }
   };
 
-  const handleSendWhatsApp = async () => {
-    try {
-      const defaultMessage = 'New job posted!';
-      Linking.openURL(`https://api.whatsapp.com/send?phone=${whatsappNumber.replace(/\D/g, '')}&text=${encodeURIComponent(defaultMessage)}`);
-      Alert.alert('Success', 'WhatsApp message sent');
-      setWhatsappNumber('');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to send WhatsApp: ' + error.message);
-    }
-  };
-
-  const handleSendMassEmail = async () => {
-    if (selectedSeekers.length === 0) {
-      Alert.alert('Error', 'Please select at least one seeker');
-      return;
-    }
-    try {
-      await sendMassEmail({ seekerIds: selectedSeekers, subject: emailSubject, body: emailBody });
-      Alert.alert('Success', 'Mass emails sent successfully');
-      setEmailSubject(''); setEmailBody(''); setSelectedSeekers([]);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to send mass email: ' + error.message);
-    }
-  };
-
   const handleSearchSeekers = async () => {
     try {
       const response = await searchSeekers({ skills: seekerQuery, location: locationQuery });
@@ -196,10 +161,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
     } catch (error) {
       Alert.alert('Error', 'Failed to search seekers: ' + error.message);
     }
-  };
-
-  const handleSeekerSelect = (seekerId) => {
-    setSelectedSeekers(prev => prev.includes(seekerId) ? prev.filter(id => id !== seekerId) : [...prev, seekerId]);
   };
 
   const handleViewApplicants = async (jobId) => {
@@ -214,21 +175,21 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
   };
 
   const handleViewSeekerProfile = (seekerId) => {
-    if(!seekerId){
-      Alert.alert('Error', 'No seeker Selected');
+    if (!seekerId) {
+      Alert.alert('Error', 'No seeker selected');
       return;
     }
-    setSelectedJobId(null); // Close the Applicants modal
-    setSelectedSeekerId(seekerId); // Set the selected seeker ID
-    setShowSeekerProfileModal(true); // Show the SeekerProfileDetails modal
+    setSelectedJobId(null);
+    setSelectedSeekerId(seekerId);
+    setShowSeekerProfileModal(true);
   };
 
   const handleEditJob = (job) => {
-    setSelectedJobForEdit(job); 
+    setSelectedJobForEdit(job);
     setJobTitle(job.jobTitle || '');
     setJobDescription(job.jobDescription || '');
     setSkillType(job.skillType || 'IT');
-    setSkills((job.skills || []).join(', ')); 
+    setSkills((job.skills || []).join(', '));
     setExperienceRequired(job.experienceRequired?.toString() || '');
     setLocation(job.location || '');
     setMaxCTC(job.maxCTC?.toString() || '');
@@ -237,7 +198,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
 
   const handleCloseSeekerProfileModal = () => {
     setShowSeekerProfileModal(false);
-    setSelectedSeekerId(null); // Reset the selected seeker ID
+    setSelectedSeekerId(null);
   };
 
   const handleWhatsAppConnect = (number, seekerName) => {
@@ -269,16 +230,20 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
   };
 
   const handleActiveInactiveJob = async (job) => {
-    console.log("this job has to be marked inactive", job);
-    try{
+    try {
       const jobId = job._id;
+      const newAvailability = !job.available; // Toggle current availability
       const response = await changeJobAvailibility(jobId);
-      console.log("job availibility response", response);
-      setPostedJobs(prevJobs=> prevJobs.map(job => job._id === jobId ? {...job, available: newAvailability} : job))
-    } catch(err){
-      console.log("error while changing availibility", err);
+      console.log("Job availability response:", response);
+      setPostedJobs(prevJobs =>
+        prevJobs.map(j => j._id === jobId ? { ...j, available: newAvailability } : j)
+      );
+      Alert.alert('Success', `Job marked as ${newAvailability ? 'Active' : 'Inactive'}`);
+    } catch (error) {
+      console.log("Error while changing availability:", error);
+      Alert.alert('Error', 'Failed to change job availability: ' + error.message);
     }
-  }
+  };
 
   const handleEditProfile = () => {
     navigation.navigate('ProviderProfile', { user });
@@ -292,7 +257,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
   const handlePressOut = (scale) => Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
 
   const renderSeekerProfile = (seeker) => {
-    //checking for null berfore rendering
     if (!seeker) {
       return (
         <View>
@@ -302,7 +266,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
         </View>
       );
     }
-  
+
     return (
       <View>
         <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>Name: {seeker.fullName}</Text>
@@ -338,53 +302,15 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
     );
   };
 
-  const renderJobDetails = (job, jobData) => (
-    <View>
-      <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Job Title" value={jobTitle || ''} onChangeText={setJobTitle} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
+  const getApplicantCount = (jobId) => {
+    return applicants.filter(applicant => applicant.jobId === jobId).length;
+  };
 
-        <TextInput 
-          style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} 
-          placeholder="Job Description" 
-          value={jobDescription || ''} 
-          onChangeText={setJobDescription} multiline 
-          placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-
-        <TextInput 
-          style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} 
-          placeholder="Skills (comma-separated)" 
-          value={skills} onChangeText={setSkills || ''} 
-          placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-
-        <TextInput 
-          style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Experience Required (years)" 
-          value={experienceRequired} 
-          onChangeText={setExperienceRequired || ''} 
-          keyboardType="numeric" 
-          placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-
-        <TextInput 
-          style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} 
-          placeholder="Location" 
-          value={location} 
-          onChangeText={setLocation || ''} 
-          placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-
-        <TextInput 
-          style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} 
-          placeholder="Max CTC" value={maxCTC} 
-          onChangeText={setMaxCTC || ''} 
-          keyboardType="numeric" 
-          placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-
-        <TextInput 
-          style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} 
-          placeholder="Notice Period" 
-          value={noticePeriod} 
-          onChangeText={setNoticePeriod || ''} 
-          placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-
-    </View>
-  );
+  const filteredJobs = () => {
+    if (jobFilter === 'Active') return postedJobs.filter(job => job.available);
+    if (jobFilter === 'Inactive') return postedJobs.filter(job => !job.available);
+    return postedJobs; // 'All'
+  };
 
   return (
     <View style={[styles.container, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
@@ -405,49 +331,15 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
         <View style={styles.content}>
           {user ? (
             <>
-              <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>
-                {selectedJobForEdit ? 'Edit Job' : 'Post a New Job'}
-              </Text>
-              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Job Title" value={jobTitle || ''} onChangeText={setJobTitle} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Skills (comma-separated)" value={skills || ''} onChangeText={setSkills} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Experience Required (years)" value={experienceRequired || ''} onChangeText={setExperienceRequired} keyboardType="numeric" placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Location" value={location || ''} onChangeText={setLocation} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Max CTC" value={maxCTC || ''} onChangeText={setMaxCTC} keyboardType="numeric" placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Notice Period" value={noticePeriod || ''} onChangeText={setNoticePeriod} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-              <TouchableOpacity style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={selectedJobForEdit ? handleUpdateJob : handlePostJob} onPressIn={() => handlePressIn(postScale)} onPressOut={() => handlePressOut(postScale)} activeOpacity={0.8}>
+              <TouchableOpacity
+                style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+                onPress={() => setShowPostJobModal(true)}
+                onPressIn={() => handlePressIn(postScale)}
+                onPressOut={() => handlePressOut(postScale)}
+                activeOpacity={0.8}
+              >
                 <Animated.View style={{ transform: [{ scale: postScale }] }}>
-                  <Text style={styles.buttonText}>{selectedJobForEdit ? 'Update Job' : 'Post Job'}</Text>
-                </Animated.View>
-              </TouchableOpacity>
-
-              <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Notify via WhatsApp</Text>
-              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="WhatsApp Number" value={whatsappNumber} onChangeText={setWhatsappNumber} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-              <TouchableOpacity style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={handleSendWhatsApp} onPressIn={() => handlePressIn(whatsappScale)} onPressOut={() => handlePressOut(whatsappScale)} activeOpacity={0.8}>
-                <Animated.View style={{ transform: [{ scale: whatsappScale }] }}>
-                  <Text style={styles.buttonText}>Send WhatsApp</Text>
-                </Animated.View>
-              </TouchableOpacity>
-
-              <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Send Mass Email</Text>
-              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Email Subject" value={emailSubject} onChangeText={setEmailSubject} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Email Body" value={emailBody} onChangeText={setEmailBody} multiline placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
-              <Text style={[styles.subtitle, isDarkMode ? styles.darkText : styles.lightText]}>Select Seekers:</Text>
-              <FlatList
-                data={seekers}
-                keyExtractor={(item) => item._id.toString()}
-                renderItem={({ item }) => (
-                  <View style={styles.listItem}>
-                    <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>{item.fullName}</Text>
-                    <TouchableOpacity onPress={() => handleSeekerSelect(item._id)} style={[styles.checkbox, selectedSeekers.includes(item._id) && styles.checked]}>
-                      <Text style={styles.checkboxText}>{selectedSeekers.includes(item._id) ? '✔' : ''}</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-                scrollEnabled={false}
-              />
-              <TouchableOpacity style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={handleSendMassEmail} onPressIn={() => handlePressIn(emailScale)} onPressOut={() => handlePressOut(emailScale)} activeOpacity={0.8}>
-                <Animated.View style={{ transform: [{ scale: emailScale }] }}>
-                  <Text style={styles.buttonText}>Send Email</Text>
+                  <Text style={styles.buttonText}>Post a New Job</Text>
                 </Animated.View>
               </TouchableOpacity>
 
@@ -471,8 +363,28 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
               />
 
               <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Your Posted Jobs</Text>
+              <View style={styles.filterContainer}>
+                <TouchableOpacity
+                  style={[styles.filterButton, jobFilter === 'All' && styles.activeFilter]}
+                  onPress={() => setJobFilter('All')}
+                >
+                  <Text style={[styles.filterText, isDarkMode ? styles.darkText : styles.lightText]}>All</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.filterButton, jobFilter === 'Active' && styles.activeFilter]}
+                  onPress={() => setJobFilter('Active')}
+                >
+                  <Text style={[styles.filterText, isDarkMode ? styles.darkText : styles.lightText]}>Active</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.filterButton, jobFilter === 'Inactive' && styles.activeFilter]}
+                  onPress={() => setJobFilter('Inactive')}
+                >
+                  <Text style={[styles.filterText, isDarkMode ? styles.darkText : styles.lightText]}>Inactive</Text>
+                </TouchableOpacity>
+              </View>
               <FlatList
-                data={postedJobs}
+                data={filteredJobs()}
                 keyExtractor={(item) => item._id.toString()}
                 renderItem={({ item }) => {
                   return (
@@ -482,7 +394,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                           <Text style={[styles.jobText, isDarkMode ? styles.darkText : styles.lightText]}>{item.jobTitle}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                          onPress={() => handleActiveInactiveJob(item)} 
+                          onPress={() => handleActiveInactiveJob(item)}
                           style={[styles.jobActiveBtn, item.available ? styles.jobActive : styles.jobInactive]}
                         >
                           <Text style={styles.jobActiveText}>
@@ -491,15 +403,28 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                         </TouchableOpacity>
                       </View>
                       <View style={styles.jobActions}>
-                        <TouchableOpacity style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={() => handleViewApplicants(item._id)}>
-                          <Text style={styles.buttonText}>View Applicants</Text>
+                        <TouchableOpacity
+                          style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton]}
+                          onPress={() => handleViewApplicants(item._id)}
+                        >
+                          <Text style={styles.buttonText}>View Applicants ({getApplicantCount(item._id)})</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={() => handleEditJob(item)} onPressIn={() => handlePressIn(editJobScale)} onPressOut={() => handlePressOut(editJobScale)}>
+                        <TouchableOpacity
+                          style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton]}
+                          onPress={() => handleEditJob(item)}
+                          onPressIn={() => handlePressIn(editJobScale)}
+                          onPressOut={() => handlePressOut(editJobScale)}
+                        >
                           <Animated.View style={{ transform: [{ scale: editJobScale }] }}>
                             <Text style={styles.buttonText}>Edit Job</Text>
                           </Animated.View>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={() => handleDeleteJob(item._id)} onPressIn={() => handlePressIn(deleteJobScale)} onPressOut={() => handlePressOut(deleteJobScale)}>
+                        <TouchableOpacity
+                          style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton]}
+                          onPress={() => handleDeleteJob(item._id)}
+                          onPressIn={() => handlePressIn(deleteJobScale)}
+                          onPressOut={() => handlePressOut(deleteJobScale)}
+                        >
                           <Animated.View style={{ transform: [{ scale: deleteJobScale }] }}>
                             <Text style={styles.buttonText}>Delete Job</Text>
                           </Animated.View>
@@ -511,14 +436,98 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                 scrollEnabled={false}
               />
 
+              {/* Post Job Modal */}
+              <Modal
+                visible={showPostJobModal}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowPostJobModal(false)}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
+                    <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Post a New Job</Text>
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Job Title"
+                      value={jobTitle}
+                      onChangeText={setJobTitle}
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Job Description"
+                      value={jobDescription}
+                      onChangeText={setJobDescription}
+                      multiline
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Skills (comma-separated)"
+                      value={skills}
+                      onChangeText={setSkills}
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Experience Required (years)"
+                      value={experienceRequired}
+                      onChangeText={setExperienceRequired}
+                      keyboardType="numeric"
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Location"
+                      value={location}
+                      onChangeText={setLocation}
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Max CTC"
+                      value={maxCTC}
+                      onChangeText={setMaxCTC}
+                      keyboardType="numeric"
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Notice Period"
+                      value={noticePeriod}
+                      onChangeText={setNoticePeriod}
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TouchableOpacity
+                      style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+                      onPress={handlePostJob}
+                      onPressIn={() => handlePressIn(postScale)}
+                      onPressOut={() => handlePressOut(postScale)}
+                      activeOpacity={0.8}
+                    >
+                      <Animated.View style={{ transform: [{ scale: postScale }] }}>
+                        <Text style={styles.buttonText}>Post Job</Text>
+                      </Animated.View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+                      onPress={() => setShowPostJobModal(false)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.buttonText}>Close</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Modal>
+
               {/* Seeker Profile Modal */}
               <Modal visible={showSeekerProfileModal} transparent={true} animationType="slide" onRequestClose={() => setShowSeekerProfileModal(false)}>
                 <View style={[styles.modalOverlay, { zIndex: 10 }]}>
                   <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
                     <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Seeker Profile</Text>
                     {renderSeekerProfile(
-                      seekers.find(s => s._id === selectedSeekerId) || 
-                      applicants.find(a => a.seeker?._id === selectedSeekerId)?.seeker || 
+                      seekers.find(s => s._id === selectedSeekerId) ||
+                      applicants.find(a => a.seeker?._id === selectedSeekerId)?.seeker ||
                       null
                     )}
                     <TouchableOpacity style={[styles.closeButton, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={handleCloseSeekerProfileModal} activeOpacity={0.8}>
@@ -537,7 +546,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                       data={applicants.filter(applicant => applicant.jobId === selectedJobId)}
                       keyExtractor={(item) => item._id.toString()}
                       renderItem={({ item }) => {
-                        // Check if seeker is null
                         if (!item.seeker) {
                           return (
                             <View style={styles.listItem}>
@@ -547,7 +555,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                             </View>
                           );
                         }
-
                         return (
                           <View style={styles.listItem}>
                             <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>
@@ -572,112 +579,83 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
 
               {/* Job Details Modal */}
               <Modal
-              visible={!!selectedJobForEdit}
-              transparent={true}
-              animationType="slide"
-              onRequestClose={() => setSelectedJobForEdit(null)}
-            >
-              <View style={styles.modalOverlay}>
-                <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
-                  
-                  {/* Modal Title */}
-                  <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>
-                    Edit Job
-                  </Text>
-
-                  {/* Job Title */}
-                  <Text style={styles.label}>Job Title</Text>
-                  <TextInput
-                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                    placeholder="Enter Job Title"
-                    value={jobTitle || ''}
-                    onChangeText={setJobTitle}
-                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                  />
-
-                  {/* Skills */}
-                  <Text style={styles.label}>Skills (comma-separated)</Text>
-                  <TextInput
-                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                    placeholder="Enter Required Skills"
-                    value={skills || ''}
-                    onChangeText={setSkills}
-                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                  />
-
-                  {/* Experience Required */}
-                  <Text style={styles.label}>Experience Required (years)</Text>
-                  <TextInput
-                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                    placeholder="Enter Experience in Years"
-                    value={experienceRequired || ''}
-                    onChangeText={setExperienceRequired}
-                    keyboardType="numeric"
-                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                  />
-
-                  {/* Location */}
-                  <Text style={styles.label}>Location</Text>
-                  <TextInput
-                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                    placeholder="Enter Job Location"
-                    value={location || ''}
-                    onChangeText={setLocation}
-                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                  />
-
-                  {/* Max CTC */}
-                  <Text style={styles.label}>Max CTC</Text>
-                  <TextInput
-                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                    placeholder="Enter Maximum CTC"
-                    value={maxCTC || ''}
-                    onChangeText={setMaxCTC}
-                    keyboardType="numeric"
-                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                  />
-
-                  {/* Notice Period */}
-                  <Text style={styles.label}>Notice Period</Text>
-                  <TextInput
-                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                    placeholder="Enter Notice Period"
-                    value={noticePeriod || ''}
-                    onChangeText={setNoticePeriod}
-                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                  />
-
-                  {/* Save Changes Button */}
-                  <TouchableOpacity
-                    style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                    onPress={handleUpdateJob}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.buttonText}>Save Changes</Text>
-                  </TouchableOpacity>
-
-                  {/* Close Button */}
-                  <TouchableOpacity
-                    style={[styles.button, styles.cancelButton]}
-                    onPress={() => setSelectedJobForEdit(null)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.buttonText}>Close</Text>
-                  </TouchableOpacity>
-
-                   {/* Close Button */}
-                   <TouchableOpacity
+                visible={!!selectedJobForEdit}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setSelectedJobForEdit(null)}
+              >
+                <View style={styles.modalOverlay}>
+                  <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
+                    <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Edit Job</Text>
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Job Title"
+                      value={jobTitle || ''}
+                      onChangeText={setJobTitle}
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Job Description"
+                      value={jobDescription || ''}
+                      onChangeText={setJobDescription}
+                      multiline
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Skills (comma-separated)"
+                      value={skills || ''}
+                      onChangeText={setSkills}
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Experience Required (years)"
+                      value={experienceRequired || ''}
+                      onChangeText={setExperienceRequired}
+                      keyboardType="numeric"
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Location"
+                      value={location || ''}
+                      onChangeText={setLocation}
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Max CTC"
+                      value={maxCTC || ''}
+                      onChangeText={setMaxCTC}
+                      keyboardType="numeric"
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TextInput
+                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                      placeholder="Notice Period"
+                      value={noticePeriod || ''}
+                      onChangeText={setNoticePeriod}
+                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                    />
+                    <TouchableOpacity
+                      style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+                      onPress={handleUpdateJob}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.buttonText}>Save Changes</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
                       style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
                       onPress={() => setSelectedJobForEdit(null)}
                       activeOpacity={0.8}
                     >
                       <Text style={styles.buttonText}>Close</Text>
                     </TouchableOpacity>
-
+                  </View>
                 </View>
-              </View>
-            </Modal>
-
+              </Modal>
             </>
           ) : (
             <Text style={[styles.loading, isDarkMode ? styles.darkText : styles.lightText]}>Loading profile...</Text>
@@ -697,15 +675,11 @@ const styles = StyleSheet.create({
   content: { padding: 10, flexGrow: 1 },
   topActions: { flexDirection: 'row', justifyContent: 'space-between', padding: 10 },
   title: { fontSize: 20, fontWeight: 'bold', marginVertical: 10 },
-  subtitle: { fontSize: 14, marginBottom: 10 },
   input: { borderWidth: 1, padding: 10, marginBottom: 10, borderRadius: 5 },
   lightInput: { borderColor: '#ccc', color: '#000' },
   darkInput: { borderColor: '#555', color: '#ddd', backgroundColor: '#333' },
   listItem: { padding: 10, borderBottomWidth: 1, borderColor: '#ccc' },
   itemText: { fontSize: 16, marginBottom: 5 },
-  checkbox: { width: 20, height: 20, borderWidth: 1, borderColor: '#007AFF', justifyContent: 'center', alignItems: 'center' },
-  checked: { backgroundColor: '#007AFF' },
-  checkboxText: { color: '#fff' },
   jobItem: { padding: 10, borderBottomWidth: 1, borderColor: '#ccc' },
   jobText: { fontSize: 16 },
   jobActions: { flexDirection: 'row', gap: 10, marginTop: 5 },
@@ -714,8 +688,7 @@ const styles = StyleSheet.create({
   lightButton: { backgroundColor: '#007AFF' },
   darkButton: { backgroundColor: '#005BB5' },
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
-  modalOverlay: {
-    flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10, },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 10 },
   modalContent: { width: '90%', padding: 20, borderRadius: 10 },
   lightModal: { backgroundColor: '#fff' },
   darkModal: { backgroundColor: '#333' },
@@ -732,23 +705,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     margin: 5,
   },
-  jobActive: { 
-    backgroundColor: 'green',
-  },
- jobInactive: { 
-    backgroundColor: 'red',
-  },
-  jobActiveText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  jobNameContainer: {
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    width: '100%', 
-    paddingHorizontal: 10
-  },
-
-}); //chnaged
+  jobActive: { backgroundColor: 'green' },
+  jobInactive: { backgroundColor: 'red' },
+  jobActiveText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+  jobNameContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingHorizontal: 10 },
+  filterContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 10 },
+  filterButton: { padding: 8, borderRadius: 5, borderWidth: 1, borderColor: '#ccc' },
+  activeFilter: { backgroundColor: '#007AFF', borderColor: '#007AFF' },
+  filterText: { fontSize: 14, fontWeight: 'bold' },
+});

@@ -1,30 +1,65 @@
-import React, { useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Modal } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Header = ({ title, toggleDarkMode, isDarkMode }) => {
   const navigation = useNavigation();
   const route = useRoute();
   const canGoBack = navigation.canGoBack();
-  const shineAnim = useRef(new Animated.Value(1)).current; // Animation value for shine effect
+  const shineAnim = useRef(new Animated.Value(1)).current;
+  const [modalVisible, setModalVisible] = useState(false);
 
+  // Dark Mode Toggle Animation
   const handleToggle = () => {
-    // Trigger shine animation
     Animated.sequence([
       Animated.timing(shineAnim, {
-        toValue: 1.5, // Scale up
+        toValue: 1.5,
         duration: 100,
         useNativeDriver: true,
       }),
       Animated.timing(shineAnim, {
-        toValue: 1, // Scale back
+        toValue: 1,
         duration: 100,
         useNativeDriver: true,
       }),
     ]).start();
+    toggleDarkMode();
+  };
 
-    toggleDarkMode(); // Toggle mode
+  // Logout Function
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('userRole');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'Home' }],
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+      Alert.alert('Error', 'Failed to logout');
+    }
+  };
+
+  // Edit Profile Function
+  const handleEditProfile = () => {
+    setModalVisible(false);
+    if (route.name === 'SeekerDashboard') {
+      navigation.navigate('SeekerProfile', { user: route.params?.user });
+    } else if (route.name === 'ProviderDashboard') {
+      navigation.navigate('ProviderProfile', { user: route.params?.user });
+    }
+  };
+
+  // Handle Settings Click
+  const handleSettingsPress = () => {
+    if (route.name === 'SeekerDashboard' || route.name === 'ProviderDashboard') {
+      setModalVisible(true);
+    } else {
+      navigation.navigate('AuthForm', { role: 'admin' });
+    }
   };
 
   return (
@@ -38,6 +73,7 @@ const Header = ({ title, toggleDarkMode, isDarkMode }) => {
         {title || 'JobConnector'}
       </Text>
       <View style={styles.rightContainer}>
+        {/* Dark Mode Toggle */}
         <TouchableOpacity 
           onPress={handleToggle} 
           style={[
@@ -50,26 +86,44 @@ const Header = ({ title, toggleDarkMode, isDarkMode }) => {
               <Icon 
                 name={isDarkMode ? 'lightbulb-outline' : 'lightbulb'} 
                 size={24} 
-                color={isDarkMode ? '#ddd' : '#ffd700'} // Yellow in light mode for "on" effect
+                color={isDarkMode ? '#ddd' : '#ffd700'}
               />
               {!isDarkMode && (
                 <Icon 
                   name="flare" 
                   size={30} 
-                  color="rgba(255, 215, 0, 0.5)" // Semi-transparent yellow rays
+                  color="rgba(255, 215, 0, 0.5)"
                   style={styles.rays}
                 />
               )}
             </View>
           </Animated.View>
         </TouchableOpacity>
+
+        {/* Settings Icon */}
         <TouchableOpacity 
-          onPress={() => navigation.navigate('AuthForm', { role: 'admin' })} 
-          style={styles.adminButton}
+          onPress={handleSettingsPress}
+          style={styles.settingsButton}
         >
           <Icon name="settings" size={24} color={isDarkMode ? '#ddd' : '#fff'} />
         </TouchableOpacity>
       </View>
+
+      {/* Settings Dropdown (Only in SeekerDashboard & ProviderDashboard) */}
+      {(route.name === 'SeekerDashboard' || route.name === 'ProviderDashboard') && (
+        <Modal visible={modalVisible} transparent animationType="fade">
+          <TouchableOpacity style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+            <View style={styles.modalContent}>
+              <TouchableOpacity style={styles.option} onPress={handleEditProfile}>
+                <Text style={styles.optionText}>Edit Profile</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.option} onPress={handleLogout}>
+                <Text style={styles.optionText}>Logout</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
     </View>
   );
 };
@@ -105,18 +159,19 @@ const styles = StyleSheet.create({
   modeButton: { 
     padding: 8, 
     borderWidth: 2, 
-    borderRadius: 16, // Circular border
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
   },
   lightModeButton: { 
-    borderColor: '#fff', // White border in light mode
+    borderColor: '#fff',
   },
   darkModeButton: { 
-    borderColor: '#ffd700', // Yellow border in dark mode
+    borderColor: '#ffd700',
   },
-  adminButton: { 
-    padding: 10 
+  settingsButton: { 
+    padding: 10,
+    marginLeft: 5 
   },
   lightText: { 
     color: '#fff' 
@@ -131,7 +186,28 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -3,
     left: -3,
-    zIndex: -1, // Behind the bulb
+    zIndex: -1,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 10,
+    width: 200,
+  },
+  option: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  optionText: {
+    fontSize: 16,
+    textAlign: 'center',
   },
 });
 

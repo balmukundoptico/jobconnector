@@ -108,7 +108,7 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
           };
         }
         setResumeFile(fileData);
-        setResumeFileName(selectedFile.name || "resume.pdf"); // Ensure consistent naming
+        setResumeFileName(selectedFile.name || "resume.pdf");
         setMessage("Resume selected: " + (selectedFile.name || "resume.pdf"));
       } else {
         setMessage("No file selected");
@@ -150,34 +150,32 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
       profileData.append("noticePeriod", formData.noticePeriod || "");
       profileData.append("lastWorkingDate", formData.lastWorkingDate || "");
       profileData.append("bio", formData.bio || "");
-  
+
       if (resumeFile) {
         profileData.append("resume", resumeFile, resumeFile.name);
       }
-  
+
       if (isEditMode) {
         profileData.append("_id", route.params.user._id);
       }
-  
+
       let response;
       if (isEditMode) {
         response = await updateSeekerProfile(profileData);
       } else {
         response = await createSeekerProfile(profileData);
       }
-  
+
       setMessage(response.data.message);
       setProfileCreated(true);
-      
-      // Navigate to SeekerDashboard with user data
-      navigation.navigate("SeekerDashboard", { 
+
+      navigation.navigate("SeekerDashboard", {
         user: response.data.user || {
           ...formData,
-          _id: isEditMode ? route.params.user._id : response.data.user?._id
+          _id: isEditMode ? route.params.user._id : response.data.user?._id,
         },
-        contact: formData.whatsappNumber || formData.email
+        contact: formData.whatsappNumber || formData.email,
       });
-  
     } catch (error) {
       console.error("API error:", error.response?.data || error.message);
       setMessage(
@@ -362,7 +360,7 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
                     <Text style={styles.buttonText}>Pick Resume File</Text>
                   </Animated.View>
                 </TouchableOpacity>
-
+                <View style={{ height: 10 }} />
                 <TouchableOpacity
                   style={styles.button}
                   onPress={handleSubmitProfile}
@@ -435,10 +433,7 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     padding: 24,
     borderRadius: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
+    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.25)", // Updated from shadow*
     elevation: 5,
     borderWidth: 1,
   },
@@ -477,48 +472,40 @@ const styles = StyleSheet.create({
     padding: 8,
     fontSize: 15,
     backgroundColor: "transparent",
-    shadowColor: "#000",
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
+    borderWidth: 1, // Added visible border
+    boxShadow: "0 3px 10px rgba(0, 0, 0, 0.1)", // Updated from shadow*
     elevation: 5,
-    shadowColor: "#FFF",
-    shadowOffset: { width: -1, height: -1 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
   },
-  lightInput: { backgroundColor: "#FFFFFF", color: "#1F2937" },
-  darkInput: { backgroundColor: "#374151", color: "#F9FAFB" },
+  lightInput: { 
+    backgroundColor: "#FFFFFF", 
+    color: "#1F2937", 
+    borderColor: "#D1D5DB", // Light mode border
+  },
+  darkInput: { 
+    backgroundColor: "#374151", 
+    color: "#F9FAFB", 
+    borderColor: "#4B5563", // Dark mode border
+  },
   inputFocused: {
-    shadowColor: "#000",
-    shadowOffset: { width: 3, height: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    elevation: 5,
-    shadowColor: "#FFF",
-    shadowOffset: { width: -1, height: -1 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
+    borderWidth: 2, // Thicker border on focus
+    boxShadow: "0 3px 10px rgba(0, 0, 0, 0.2)", // Enhanced shadow on focus
   },
   textArea: { height: 100, textAlignVertical: "top" },
   button: {
     width: "100%",
-    borderRadius: 100,
+    borderRadius: 25,
     backgroundColor: "#080808",
-    shadowColor: "#FFF",
-    shadowOffset: { width: 0, height: 4.8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 14.4,
-    elevation: 5,
+    boxShadow: "0 2px 6px rgba(255, 255, 255, 0.3)", // Updated from shadow*
+    elevation: 3,
   },
-  buttonWrap: {
-    paddingVertical: 32,
-    paddingHorizontal: 45,
-    borderRadius: 100,
+  buttonWrap: { 
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
     backgroundColor: "rgba(255, 255, 255, 0.12)",
   },
   buttonText: {
-    fontSize: 25,
+    fontSize: 16,
     fontWeight: "500",
     color: "rgba(255, 255, 255, 0.7)",
     textAlign: "center",
@@ -527,5 +514,3 @@ const styles = StyleSheet.create({
 });
 
 export default SeekerProfile;
-
-// working code edit profile
