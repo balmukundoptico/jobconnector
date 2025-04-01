@@ -96,19 +96,20 @@ exports.applyToJob = async (req, res) => {
 
 exports.toggleJobAvailability = async (req, res) => {
   try {
-    const { jobId } = req.query;  
-    console.log("job id for changing activeness", jobId);
+    const { jobId } = req.params; // Use params instead of query
+    console.log("Job ID for changing activeness:", jobId);
 
-    const job = await JobPosting.findOne({ _id: jobId });
-    if(job.available === true){
-      job.available = false;
+    // Find the job by ID
+    const job = await JobPosting.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ success: false, message: "Job not found" });
     }
-    else{
-      job.available = true;
-    }
-    await job.save();
 
-    res.json({ success: true, message: "Job availability toggled", job });
+    // Toggle job availability
+    job.available = !job.available;
+    const updatedJob = await job.save();
+
+    res.json({ success: true, message: "Job availability toggled", job: updatedJob });
   } catch (error) {
     console.error("Error toggling job availability:", error);
     res.status(500).json({ success: false, message: "Server error" });

@@ -50,8 +50,8 @@ router.post('/delete', deleteJob);
 router.post('/apply-job', applyToJob);
 router.get('/applicants', getApplicants);
 router.get('/get/appliedfor', getAppliedJobsBySeeker);
-router.post('/change/availibility', toggleJobAvailability)
-
+// router.post('/change/availibility', toggleJobAvailability)
+router.post('/change/availibility/:jobId', toggleJobAvailability);
 // New routes for updating jobs and seekers
 router.post('/update-job', updateJob);
 router.post('/update-seeker', updateSeekerProfile);

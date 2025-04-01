@@ -26,8 +26,8 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [selectedSeekerId, setSelectedSeekerId] = useState(null);
   const [selectedJobForEdit, setSelectedJobForEdit] = useState(null);
-  const [showPostJobModal, setShowPostJobModal] = useState(false); // New state for job post modal
-  const [jobFilter, setJobFilter] = useState('All'); // New state for job filter
+  const [showPostJobModal, setShowPostJobModal] = useState(false);
+  const [jobFilter, setJobFilter] = useState('All');
   const navigation = useNavigation();
   const [postScale] = useState(new Animated.Value(1));
   const [searchScale] = useState(new Animated.Value(1));
@@ -56,10 +56,10 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
         });
         setUser(response.data);
       }
-      const jobsResponse = await searchJobs({});
-      const userJobs = jobsResponse.data.filter(job => job.postedBy?._id === user?._id);
-      console.log("jobs posted by you", userJobs);
-      setPostedJobs(userJobs);
+      // Pass postedBy to fetch all jobs (active and inactive) for this provider
+      const jobsResponse = await searchJobs({ postedBy: user?._id });
+      console.log("jobs posted by you", jobsResponse.data);
+      setPostedJobs(jobsResponse.data); // No need for local filtering
       const applicantsResponse = await getApplicants(user?._id);
       setApplicants(applicantsResponse.data);
       const scales = {};
@@ -96,8 +96,8 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
       setLocation('');
       setMaxCTC('');
       setNoticePeriod('');
-      setShowPostJobModal(false); // Close modal
-      fetchData(); // Refresh job list
+      setShowPostJobModal(false);
+      fetchData();
     } catch (error) {
       Alert.alert('Error', 'Failed to post job: ' + error.message);
       console.error('Error posting job:', error);
@@ -233,12 +233,16 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
     try {
       const jobId = job._id;
       const newAvailability = !job.available; // Toggle current availability
-      const response = await changeJobAvailibility(jobId);
-      console.log("Job availability response:", response);
-      setPostedJobs(prevJobs =>
-        prevJobs.map(j => j._id === jobId ? { ...j, available: newAvailability } : j)
-      );
-      Alert.alert('Success', `Job marked as ${newAvailability ? 'Active' : 'Inactive'}`);
+      const response = await changeJobAvailibility(jobId); // Updated API call
+      console.log("Job availability response:", response.data);
+      if (response.data.success) {
+        setPostedJobs(prevJobs =>
+          prevJobs.map(j => j._id === jobId ? { ...j, available: newAvailability } : j)
+        );
+        Alert.alert('Success', `Job marked as ${newAvailability ? 'Active' : 'Inactive'}`);
+      } else {
+        throw new Error(response.data.message || "Failed to toggle availability");
+      }
     } catch (error) {
       console.log("Error while changing availability:", error);
       Alert.alert('Error', 'Failed to change job availability: ' + error.message);
@@ -309,7 +313,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
   const filteredJobs = () => {
     if (jobFilter === 'Active') return postedJobs.filter(job => job.available);
     if (jobFilter === 'Inactive') return postedJobs.filter(job => !job.available);
-    return postedJobs; // 'All'
+    return postedJobs;
   };
 
   return (

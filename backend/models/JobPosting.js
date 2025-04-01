@@ -12,6 +12,7 @@ const jobPostingSchema = new mongoose.Schema({
   noticePeriod: { type: String },
   postedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'JobProvider' },
   applicants: [{ seekerId: { type: mongoose.Schema.Types.ObjectId, ref: 'JobSeeker' } }],
+  available: { type: Boolean, default: true },
 }, { timestamps: true });
 
 module.exports = mongoose.model('JobPosting', jobPostingSchema);
