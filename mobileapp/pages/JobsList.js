@@ -12,7 +12,7 @@ const ReanimatedView = Reanimated.createAnimatedComponent(View);
 const JobCard = ({ item, isDarkMode, isSelected, onSelect, handleApply, handleWhatsApp, appliedJobs, whatsappedJobs }) => {
   const tiltX = useSharedValue(0);
   const tiltY = useSharedValue(0);
-  const glowAnim = useRef(new Animated.Value(0)).current; // For button click feedback
+  const glowAnim = useRef(new Animated.Value(0)).current;
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -57,7 +57,7 @@ const JobCard = ({ item, isDarkMode, isSelected, onSelect, handleApply, handleWh
       inputRange: [0, 1],
       outputRange: [isSelected ? 2 : 0, 4],
     }),
-    borderColor: isDarkMode ? '#00ffcc' : '#007AFF', // Neon cyan or blue glow
+    borderColor: isDarkMode ? '#00ffcc' : '#007AFF',
   };
 
   const isApplied = appliedJobs.has(item._id);
@@ -158,8 +158,11 @@ export default function JobsList({ isDarkMode, toggleDarkMode, route }) {
 
   const fetchJobs = async (filters = {}) => {
     try {
-      const response = await searchJobs(filters);
-      setJobs(response.data || []);
+      const searchFilters = { ...filters, available: true }; // Explicitly request active jobs
+      const response = await searchJobs(searchFilters);
+      const fetchedJobs = (response.data || []).filter(job => job.available === true); // Client-side filter
+      console.log('Fetched Jobs in JobsList:', fetchedJobs); // Debug log
+      setJobs(fetchedJobs);
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch jobs: ' + error.message);
       console.error('fetchJobs error:', error);
@@ -172,9 +175,12 @@ export default function JobsList({ isDarkMode, toggleDarkMode, route }) {
       const searchData = {
         skills: searchSkills.split(',').map(skill => skill.trim()).filter(skill => skill),
         location: searchLocation.trim(),
+        available: true, // Explicitly request active jobs
       };
       const response = await searchJobs(searchData);
-      setJobs(response.data || []);
+      const fetchedJobs = (response.data || []).filter(job => job.available === true); // Client-side filter
+      console.log('Searched Jobs in JobsList:', fetchedJobs); // Debug log
+      setJobs(fetchedJobs);
       setSelectedJobId(null);
     } catch (error) {
       console.error('Search Error:', error.response?.data || error);
@@ -392,14 +398,14 @@ const styles = StyleSheet.create({
   darkSearchButton: { backgroundColor: '#ff3366' },
   jobList: { 
     paddingBottom: 20, 
-    paddingTop: 10, // Ensure top visibility
+    paddingTop: 10,
   },
   jobCard: { 
     padding: 20, 
-    marginVertical: 12, // Increased spacing
-    marginHorizontal: 10, // Side margins for clarity
+    marginVertical: 12,
+    marginHorizontal: 10,
     borderRadius: 15, 
-    elevation: 6, // Slightly higher for depth
+    elevation: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -439,14 +445,14 @@ const styles = StyleSheet.create({
     borderRadius: 20, 
     elevation: 2,
   },
-  lightApplyButton: { backgroundColor: '#28a745' }, // Green
-  darkApplyButton: { backgroundColor: '#00cc99' }, // Neon green
-  lightAppliedButton: { backgroundColor: '#d4edda' }, // Light green (more visible)
-  darkAppliedButton: { backgroundColor: '#66ffcc' }, // Bright cyan
-  lightWhatsAppButton: { backgroundColor: '#6f42c1' }, // Purple
-  darkWhatsAppButton: { backgroundColor: '#9933ff' }, // Neon purple
-  lightWhatsappedButton: { backgroundColor: '#e2d6f5' }, // Light purple
-  darkWhatsappedButton: { backgroundColor: '#cc99ff' }, // Bright purple
+  lightApplyButton: { backgroundColor: '#28a745' },
+  darkApplyButton: { backgroundColor: '#00cc99' },
+  lightAppliedButton: { backgroundColor: '#d4edda' },
+  darkAppliedButton: { backgroundColor: '#66ffcc' },
+  lightWhatsAppButton: { backgroundColor: '#6f42c1' },
+  darkWhatsAppButton: { backgroundColor: '#9933ff' },
+  lightWhatsappedButton: { backgroundColor: '#e2d6f5' },
+  darkWhatsappedButton: { backgroundColor: '#cc99ff' },
   buttonText: { 
     color: '#fff', 
     fontSize: 14, 

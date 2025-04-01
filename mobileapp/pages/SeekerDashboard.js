@@ -45,17 +45,19 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
         setUser(fetchedUser);
         setAppliedJobs(fetchedUser.appliedJobs || []);
       }
-
-      // Fetch all jobs for suggestions
-      const jobResponse = await searchJobs({});
+  
+      // Fetch only active jobs for seekers
+      const jobResponse = await searchJobs({ available: true }); // Modified to only get active jobs
+      
       const allJobs = jobResponse.data
-        .filter(job => job && job._id)
+        .filter(job => job && job._id && job.available) // Additional check for available jobs
         .map(job => ({
           ...job,
           applied: appliedJobs.some(applied => applied.jobId === job._id),
         }));
-      console.log('All Jobs:', allJobs);
-
+  
+      console.log('Active Jobs:', allJobs);
+  
       // Suggest top 5 jobs based on user skills
       if (user?.skills?.length) {
         const userSkills = Array.isArray(user.skills) ? user.skills : user.skills.split(',').map(s => s.trim());
@@ -66,15 +68,15 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
         console.log('Suggested Jobs:', filteredJobs);
         setSuggestedJobs(filteredJobs);
       }
-
-      // Fetch trending jobs
+  
+      // Fetch trending jobs (ensure they're active)
       const trendingResponse = await getTrendingSkills();
       const trending = (trendingResponse.data.jobs || trendingResponse.data)
-        .filter(job => job && job._id)
+        .filter(job => job && job._id && job.available) // Only active trending jobs
         .slice(0, 5);
-      console.log('Trending Jobs:', trending);
+      console.log('Trending Active Jobs:', trending);
       setTrendingJobs(trending);
-
+  
       // Set animation scales
       const scales = {};
       allJobs.forEach(job => {
@@ -104,17 +106,21 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
       const searchData = {
         skills: searchSkills.split(',').map(skill => skill.trim()).filter(skill => skill),
         location: searchLocation.trim(),
+        available: true // Explicitly request only active jobs
       };
+  
       const response = await searchJobs(searchData);
+  
       const filteredJobs = response.data
-        .filter(job => job && job._id)
+        .filter(job => job && job._id && job.available) // Double-check job is active
         .map(job => ({
           ...job,
           applied: appliedJobs.some(applied => applied.jobId === job._id),
         }));
-      console.log('Searched Jobs:', filteredJobs);
-      setSuggestedJobs(filteredJobs.slice(0, 5)); // Update suggested jobs with top 5 search results
-      setMessage(filteredJobs.length === 0 ? 'No jobs found' : '');
+  
+      console.log('Active Searched Jobs:', filteredJobs);
+      setSuggestedJobs(filteredJobs.slice(0, 5));
+      setMessage(filteredJobs.length === 0 ? 'No active jobs found matching your criteria' : '');
     } catch (error) {
       console.error('Search Error:', error.response?.data || error);
       setMessage('Error searching jobs: ' + (error.response?.data?.message || error.message));

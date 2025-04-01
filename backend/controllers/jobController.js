@@ -42,10 +42,16 @@ exports.postJob = async (req, res) => {
 };
 
 exports.searchJobs = async (req, res) => {
-  const { skills, experience, location, minCTC, maxCTC, noticePeriod, filters } = req.query;
+  const { skills, experience, location, minCTC, maxCTC, noticePeriod, filters, postedBy } = req.query;
 
   try {
     const query = {};
+    
+    // Only show active jobs unless filtered by postedBy (for providers)
+    if (!postedBy) {
+      query.available = true; // Filter for active jobs only for seekers
+    }
+
     if (skills) query.skills = { $in: skills.split(',') };
     if (experience) query.experienceRequired = { $lte: Number(experience) };
     if (location) query.location = new RegExp(location, 'i');
@@ -57,12 +63,16 @@ exports.searchJobs = async (req, res) => {
       if (filterArr.includes('viewed')) query.viewed = true;
       if (filterArr.includes('new')) query.createdAt = { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
     }
+    if (postedBy) query.postedBy = postedBy; // Allow providers to see all their jobs
 
-    const jobs = await JobPosting.find(query).populate('postedBy', 'companyName hrName hrWhatsappNumber');
+    const jobs = await JobPosting.find(query)
+      .populate('postedBy', 'companyName hrName hrWhatsappNumber')
+      .sort({ createdAt: -1 }); // Newest jobs first
+
     res.json(jobs);
   } catch (error) {
     console.error('Error searching jobs:', error);
-    res.status(500).json({ message: 'Error searching jobs' });
+    res.status(500).json({ message: 'Error searching jobs', error: error.message });
   }
 };
 
