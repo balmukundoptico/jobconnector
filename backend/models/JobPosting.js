@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 const jobPostingSchema = new mongoose.Schema({
-  jobTitle: { type: String, required: true },
+  jobTitle: { type: String},
   jobDescription: { type: String }, // Added
   skillType: { type: String },
   skills: [String],

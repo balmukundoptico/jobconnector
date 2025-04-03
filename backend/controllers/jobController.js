@@ -10,22 +10,23 @@ const transporter = nodemailer.createTransport({
 //chnages
 exports.postJob = async (req, res) => {
   const {
-    jobTitle, skillType, skills, experienceRequired, location, maxCTC, noticePeriod, postedBy
+    skills, experienceRequired, location, maxCTC, noticePeriod, postedBy
   } = req.body;
 
   try {
     // Handle skills as either a string or an array
-    let skillsArray = skills;
-    if (typeof skills === 'string') {
-      skillsArray = skills.split(',').map(skill => skill.trim());
-    } else if (!Array.isArray(skills)) {
-      return res.status(400).json({ message: 'Skills must be a string or array' });
+    let skillsArray = '';
+    if(skills){
+      skillsArray = skills;
+      if (typeof skills === 'string') {
+        skillsArray = skills.split(',').map(skill => skill.trim());
+      } else if (!Array.isArray(skills)) {
+        return res.status(400).json({ message: 'Skills must be a string or array' });
+      }
     }
 
     const job = new JobPosting({
-      jobTitle,
-      skillType,
-      skills: skillsArray,
+      skills: skillsArray ? skillsArray : '',
       experienceRequired: Number(experienceRequired) || 0,
       location,
       maxCTC: Number(maxCTC) || 0,
@@ -162,7 +163,7 @@ exports.getAppliedJobsBySeeker = async (req, res) => {
 
     const appliedJobs = await JobPosting.find({ 'applicants.seekerId': seekerId })
       .populate('postedBy', 'companyName hrName hrWhatsappNumber')
-      .select('jobTitle skillType location maxCTC noticePeriod postedBy');
+      .select('skills  location maxCTC noticePeriod postedBy');
 
     res.status(200).json({
       success: true,
@@ -185,13 +186,12 @@ exports.sendWhatsAppMessage = async (req, res) => {
 
 exports.getTrendingSkills = async (req, res) => {
   try {
-    const skillsAgg = await JobPosting.aggregate([
-      { $unwind: '$skills' },
-      { $group: { _id: '$skills', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 10 },
-    ]);
-    res.json(skillsAgg.map(skill => skill._id));
+    const response = await JobPosting.find({ available: true }).populate('postedBy', 'companyName');
+    const trendingJobs = response.slice(0, 5);
+    return res.status(200).send({
+      success:true,
+      data:trendingJobs
+    })
   } catch (error) {
     console.error('Error fetching trending skills:', error);
     res.status(500).json({ message: 'Error fetching trending skills' });

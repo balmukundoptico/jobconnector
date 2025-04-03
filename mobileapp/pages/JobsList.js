@@ -141,8 +141,8 @@ export default function JobsList({ isDarkMode, toggleDarkMode, route }) {
 
   useEffect(() => {
     const user = route?.params?.user || null;
-    const token = localStorage.getItem('token');
-    setIsAuthenticated(!!user || !!token);
+    // const token = localStorage.getItem('token');
+    setIsAuthenticated(!!user || '');
     fetchJobs();
   }, [route]);
 

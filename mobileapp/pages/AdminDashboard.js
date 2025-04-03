@@ -414,7 +414,7 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
               renderItem={({ item }) => (
                 <View style={styles.listItem}>
                   <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>
-                    {item.jobTitle || 'Unnamed Job'} - {item.postedBy?.companyName || user.fullName}
+                    {item.skills[0] || 'Unnamed Job'} - {item.postedBy?.companyName || user?.postedBy?.hrName || 'Ajay Dixit'}
                   </Text>
                   <View style={styles.actions}>
                     <TouchableOpacity
@@ -459,6 +459,7 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
               <View style={styles.modalOverlay}>
                 <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
                   <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Edit Seeker</Text>
+                  <Text syle={[styles.label]}>Seeker Name</Text>
                   <TextInput
                     style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                     value={editSeeker?.fullName || ''}
@@ -466,6 +467,7 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
                     placeholder="Full Name"
                     placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                   />
+                  <Text syle={[styles.label]}>WhatsApp Number</Text>
                   <TextInput
                     style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                     value={editSeeker?.whatsappNumber || ''}
@@ -473,6 +475,7 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
                     placeholder="WhatsApp Number"
                     placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                   />
+                  <Text syle={[styles.label]}>Seeker Email</Text>
                   <TextInput
                     style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                     value={editSeeker?.email || ''}
@@ -501,20 +504,15 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
               <View style={styles.modalOverlay}>
                 <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
                   <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Edit Job</Text>
-                  <TextInput
-                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                    value={editJob?.jobTitle || ''}
-                    onChangeText={(text) => setEditJob({ ...editJob, jobTitle: text })}
-                    placeholder="Job Title"
-                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                  />
+                  <Text syle={[styles.label]}>Job Names</Text>
                   <TextInput
                     style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                     value={editJob?.skills?.join(', ') || ''}
                     onChangeText={(text) => setEditJob({ ...editJob, skills: text.split(', ') })}
-                    placeholder="Skills (comma-separated)"
+                    placeholder="Job Names (comma-separated)"
                     placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                   />
+                  <Text syle={[styles.label]}>Job Location</Text>
                   <TextInput
                     style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                     value={editJob?.location || ''}
@@ -522,11 +520,12 @@ export default function AdminDashboard({ isDarkMode, toggleDarkMode, route }) {
                     placeholder="Location"
                     placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                   />
+                  <Text syle={[styles.label]}>Experience Required (Months)</Text>
                   <TextInput
                     style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                     value={editJob?.experienceRequired?.toString() || ''}
                     onChangeText={(text) => setEditJob({ ...editJob, experienceRequired: parseInt(text) || 0 })}
-                    placeholder="Experience Required (years)"
+                    placeholder="Experience Required (Months)"
                     keyboardType="numeric"
                     placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                   />
@@ -591,6 +590,13 @@ const styles = StyleSheet.create({
   darkInput: { borderColor: '#555', color: '#ddd', backgroundColor: '#333' },
   lightText: { color: '#333' },
   darkText: { color: '#ddd' },
+  label: {
+    position: "absolute",
+    fontSize: 15,
+    fontWeight: "700",
+    zIndex: 10,
+    paddingHorizontal: 4,
+  },
 });
 
 

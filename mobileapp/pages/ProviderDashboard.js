@@ -9,8 +9,6 @@ import Footer from '../components/Footer';
 export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route }) {
   const [user, setUser] = useState(route?.params?.user || null);
   const [jobTitle, setJobTitle] = useState('');
-  const [jobDescription, setJobDescription] = useState('');
-  const [skillType, setSkillType] = useState('IT');
   const [skills, setSkills] = useState('');
   const [experienceRequired, setExperienceRequired] = useState('');
   const [showSeekerProfileModal, setShowSeekerProfileModal] = useState(false);
@@ -22,8 +20,10 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
   const [seekers, setSeekers] = useState([]);
   const [message, setMessage] = useState('');
   const [postedJobs, setPostedJobs] = useState([]);
+  const [selectedJobForDelete, setSelectedJobForDelete] = useState(null);
   const [applicants, setApplicants] = useState([]);
   const [selectedJobId, setSelectedJobId] = useState(null);
+  const[showDeleteJobModal, setShowDeleteJobModal] = useState(false);
   const [selectedSeekerId, setSelectedSeekerId] = useState(null);
   const [selectedJobForEdit, setSelectedJobForEdit] = useState(null);
   const [showPostJobModal, setShowPostJobModal] = useState(false);
@@ -72,9 +72,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
 
   const handlePostJob = async () => {
     const jobData = {
-      jobTitle,
-      jobDescription,
-      skillType,
       skills: skills.split(',').map(s => s.trim()),
       experienceRequired: parseInt(experienceRequired) || 0,
       location,
@@ -90,8 +87,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
       Alert.alert('Success', 'Job posted successfully');
       console.log('Job created successfully:', response);
       setJobTitle('');
-      setJobDescription('');
-      setSkills('');
       setExperienceRequired('');
       setLocation('');
       setMaxCTC('');
@@ -111,9 +106,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
     }
 
     const jobData = {
-      jobTitle,
-      jobDescription,
-      skillType,
       skills: skills.split(',').map(s => s.trim()),
       experienceRequired: parseInt(experienceRequired) || 0,
       location,
@@ -128,8 +120,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
       Alert.alert('Success', 'Job updated successfully');
       console.log('Job updated successfully:', response);
       setJobTitle('');
-      setJobDescription('');
-      setSkills('');
       setExperienceRequired('');
       setLocation('');
       setMaxCTC('');
@@ -143,8 +133,10 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
 
   const handleDeleteJob = async (jobId) => {
     try {
+      console.log("job id", jobId);
       await deleteJob({ jobId });
       Alert.alert('Success', 'Job deleted successfully');
+      setShowDeleteJobModal(false);
       fetchData();
     } catch (error) {
       Alert.alert('Error', 'Failed to delete job: ' + error.message);
@@ -186,9 +178,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
 
   const handleEditJob = (job) => {
     setSelectedJobForEdit(job);
-    setJobTitle(job.jobTitle || '');
-    setJobDescription(job.jobDescription || '');
-    setSkillType(job.skillType || 'IT');
     setSkills((job.skills || []).join(', '));
     setExperienceRequired(job.experienceRequired?.toString() || '');
     setLocation(job.location || '');
@@ -205,28 +194,6 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
     const defaultMessage = `Hi ${seekerName}, I'm interested in discussing job opportunities with you`;
     Linking.openURL(`https://api.whatsapp.com/send?phone=${number.replace(/\D/g, '')}&text=${encodeURIComponent(defaultMessage)}`);
     Alert.alert('Success', `Connected with ${seekerName} via WhatsApp`);
-  };
-
-  const handleDownloadResume = async (resumePath) => {
-    if (!resumePath) {
-      Alert.alert('Error', 'No resume available');
-      return;
-    }
-    try {
-      const baseUrl = Platform.OS === 'web' ? 'https://jobconnector-backend.onrender.com' : 'https://jobconnector-backend.onrender.com';
-      const resumeUrl = `${baseUrl}${resumePath}`;
-      if (Platform.OS === 'web') {
-        window.open(resumeUrl, '_blank');
-        Alert.alert('Success', 'Resume opened in new tab');
-      } else {
-        const fileUri = `${FileSystem.documentDirectory}resume${resumePath.endsWith('.pdf') ? '.pdf' : '.docx'}`;
-        const { uri } = await FileSystem.downloadAsync(resumeUrl, fileUri);
-        await Linking.openURL(uri);
-        Alert.alert('Success', 'Resume downloaded successfully');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to download resume: ' + error.message);
-    }
   };
 
   const handleActiveInactiveJob = async (job) => {
@@ -276,22 +243,10 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
         <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>Name: {seeker.fullName}</Text>
         <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>Email: {seeker.email || 'N/A'}</Text>
         <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>WhatsApp: {seeker.whatsappNumber || 'N/A'}</Text>
-        <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>Skills: {seeker.skills?.join(', ') || 'N/A'}</Text>
+        <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>Job Names: {seeker.skills?.join(', ') || 'N/A'}</Text>
         <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>Experience: {seeker.experience || 0} years</Text>
         <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>Location: {seeker.location || 'N/A'}</Text>
-        <Text style={[styles.itemText, isDarkMode ? styles.darkText : styles.lightText]}>Resume: {seeker.resume ? seeker.resume.split('/').pop() : 'Not uploaded'}</Text>
-        {seeker.resume && (
-          <TouchableOpacity
-            style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton]}
-            onPress={() => handleDownloadResume(seeker.resume)}
-            onPressIn={() => handlePressIn(downloadScale)}
-            onPressOut={() => handlePressOut(downloadScale)}
-          >
-            <Animated.View style={{ transform: [{ scale: downloadScale }] }}>
-              <Text style={styles.buttonText}>View/Download Resume</Text>
-            </Animated.View>
-          </TouchableOpacity>
-        )}
+        
         <TouchableOpacity
           style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton]}
           onPress={() => handleWhatsAppConnect(seeker.whatsappNumber, seeker.fullName)}
@@ -348,7 +303,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
               </TouchableOpacity>
 
               <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Search Job Seekers</Text>
-              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Search by Skills" value={seekerQuery} onChangeText={setSeekerQuery} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
+              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Search " value={seekerQuery} onChangeText={setSeekerQuery} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
               <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Search by Location" value={locationQuery} onChangeText={setLocationQuery} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
               <TouchableOpacity style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={handleSearchSeekers} onPressIn={() => handlePressIn(searchScale)} onPressOut={() => handlePressOut(searchScale)} activeOpacity={0.8}>
                 <Animated.View style={{ transform: [{ scale: searchScale }] }}>
@@ -395,7 +350,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                     <View style={styles.jobItem}>
                       <View style={styles.jobNameContainer}>
                         <TouchableOpacity onPress={() => handleEditJob(item)}>
-                          <Text style={[styles.jobText, isDarkMode ? styles.darkText : styles.lightText]}>{item.jobTitle}</Text>
+                          <Text style={[styles.jobText, isDarkMode ? styles.darkText : styles.lightText]}>{item.skills[0]}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleActiveInactiveJob(item)}
@@ -425,7 +380,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton]}
-                          onPress={() => handleDeleteJob(item._id)}
+                          onPress={()=>handleDeleteJob(item._id)}
                           onPressIn={() => handlePressIn(deleteJobScale)}
                           onPressOut={() => handlePressOut(deleteJobScale)}
                         >
@@ -442,86 +397,83 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
 
               {/* Post Job Modal */}
               <Modal
-                visible={showPostJobModal}
-                transparent={true}
-                animationType="slide"
-                onRequestClose={() => setShowPostJobModal(false)}
-              >
-                <View style={styles.modalOverlay}>
-                  <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
-                    <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Post a New Job</Text>
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Job Title"
-                      value={jobTitle}
-                      onChangeText={setJobTitle}
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Job Description"
-                      value={jobDescription}
-                      onChangeText={setJobDescription}
-                      multiline
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TextInput
+                  visible={showPostJobModal}
+                  transparent={true}
+                  animationType="slide"
+                  onRequestClose={() => setShowPostJobModal(false)}
+                >
+                  <View style={styles.modalOverlay}>
+                    <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
+                      <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Post a New Job</Text>
+                      
+                      <Text style={styles.label}>Job Names (comma-separated)</Text>
+                      <TextInput
                       style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                       placeholder="Skills (comma-separated)"
                       value={skills}
                       onChangeText={setSkills}
                       placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                     />
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Experience Required (years)"
-                      value={experienceRequired}
-                      onChangeText={setExperienceRequired}
-                      keyboardType="numeric"
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Location"
-                      value={location}
-                      onChangeText={setLocation}
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Max CTC"
-                      value={maxCTC}
-                      onChangeText={setMaxCTC}
-                      keyboardType="numeric"
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Notice Period"
-                      value={noticePeriod}
-                      onChangeText={setNoticePeriod}
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TouchableOpacity
-                      style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                      onPress={handlePostJob}
-                      onPressIn={() => handlePressIn(postScale)}
-                      onPressOut={() => handlePressOut(postScale)}
-                      activeOpacity={0.8}
-                    >
-                      <Animated.View style={{ transform: [{ scale: postScale }] }}>
-                        <Text style={styles.buttonText}>Post Job</Text>
-                      </Animated.View>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                      onPress={() => setShowPostJobModal(false)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.buttonText}>Close</Text>
-                    </TouchableOpacity>
+                      
+                      <Text style={styles.label}>Experience Required (Months)</Text>
+                      <TextInput
+                        style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                        placeholder="Experience Required (Months)"
+                        value={experienceRequired}
+                        onChangeText={setExperienceRequired}
+                        keyboardType="numeric"
+                        placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                      />
+                      
+                      <Text style={styles.label}>Location</Text>
+                      <TextInput
+                        style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                        placeholder="Location"
+                        value={location}
+                        onChangeText={setLocation}
+                        placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                      />
+                      
+                      <Text style={styles.label}>Salary</Text>
+                      <TextInput
+                        style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                        placeholder="Salary"
+                        value={maxCTC}
+                        onChangeText={setMaxCTC}
+                        keyboardType="numeric"
+                        placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                      />
+                      
+                      <Text style={styles.label}>Join Within Days</Text>
+                      <TextInput
+                        style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                        placeholder="Join Withing Days"
+                        value={noticePeriod}
+                        onChangeText={setNoticePeriod}
+                        placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                      />
+                      
+                      <TouchableOpacity
+                        style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+                        onPress={handlePostJob}
+                        onPressIn={() => handlePressIn(postScale)}
+                        onPressOut={() => handlePressOut(postScale)}
+                        activeOpacity={0.8}
+                      >
+                        <Animated.View style={{ transform: [{ scale: postScale }] }}>
+                          <Text style={styles.buttonText}>Post Job</Text>
+                        </Animated.View>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+                        onPress={() => setShowPostJobModal(false)}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.buttonText}>Close</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                </View>
               </Modal>
 
               {/* Seeker Profile Modal */}
@@ -589,75 +541,72 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                 onRequestClose={() => setSelectedJobForEdit(null)}
               >
                 <View style={styles.modalOverlay}>
-                  <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
-                    <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Edit Job</Text>
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Job Title"
-                      value={jobTitle || ''}
-                      onChangeText={setJobTitle}
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Job Description"
-                      value={jobDescription || ''}
-                      onChangeText={setJobDescription}
-                      multiline
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TextInput
+                <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
+                  <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Edit Job</Text>
+                  
+                  <Text style={styles.label}>Job Names (comma-separated)</Text>
+                  <TextInput
                       style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                       placeholder="Skills (comma-separated)"
-                      value={skills || ''}
+                      value={skills}
                       onChangeText={setSkills}
                       placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                     />
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Experience Required (years)"
-                      value={experienceRequired || ''}
-                      onChangeText={setExperienceRequired}
-                      keyboardType="numeric"
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Location"
-                      value={location || ''}
-                      onChangeText={setLocation}
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Max CTC"
-                      value={maxCTC || ''}
-                      onChangeText={setMaxCTC}
-                      keyboardType="numeric"
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TextInput
-                      style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                      placeholder="Notice Period"
-                      value={noticePeriod || ''}
-                      onChangeText={setNoticePeriod}
-                      placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-                    />
-                    <TouchableOpacity
-                      style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                      onPress={handleUpdateJob}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.buttonText}>Save Changes</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                      onPress={() => setSelectedJobForEdit(null)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.buttonText}>Close</Text>
-                    </TouchableOpacity>
-                  </View>
+                  
+                  <Text style={styles.label}>Experience Required (Months)</Text>
+                  <TextInput
+                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                    placeholder="Experience Required (Months)"
+                    value={experienceRequired || ''}
+                    onChangeText={setExperienceRequired}
+                    keyboardType="numeric"
+                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                  />
+                  
+                  <Text style={styles.label}>Location</Text>
+                  <TextInput
+                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                    placeholder="Location"
+                    value={location || ''}
+                    onChangeText={setLocation}
+                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                  />
+                  
+                  <Text style={styles.label}>Salary</Text>
+                  <TextInput
+                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                    placeholder="Salary"
+                    value={maxCTC || ''}
+                    onChangeText={setMaxCTC}
+                    keyboardType="numeric"
+                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                  />
+                  
+                  <Text style={styles.label}>Join Within Days</Text>
+                  <TextInput
+                    style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+                    placeholder="Join Within Days"
+                    value={noticePeriod || ''}
+                    onChangeText={setNoticePeriod}
+                    placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+                  />
+                  
+                  <TouchableOpacity
+                    style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+                    onPress={handleUpdateJob}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.buttonText}>Save Changes</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+                    onPress={() => setSelectedJobForEdit(null)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.buttonText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
                 </View>
               </Modal>
             </>

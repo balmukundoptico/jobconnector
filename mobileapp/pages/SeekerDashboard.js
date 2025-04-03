@@ -71,11 +71,8 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
   
       // Fetch trending jobs (ensure they're active)
       const trendingResponse = await getTrendingSkills();
-      const trending = (trendingResponse.data.jobs || trendingResponse.data)
-        .filter(job => job && job._id && job.available) // Only active trending jobs
-        .slice(0, 5);
-      console.log('Trending Active Jobs:', trending);
-      setTrendingJobs(trending);
+      console.log("trending response", trendingResponse.data.data);
+      setTrendingJobs(trendingResponse.data.data);
   
       // Set animation scales
       const scales = {};
@@ -95,6 +92,7 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
       const seekerId = user?._id;
       const response = await getJobsAppliedFor(seekerId);
       setAppliedJobs(response.data.data || []);
+      console.log("applied jobs", response.data.data);
       setShowAppliedJobs(true);
     } catch (err) {
       console.error('Error fetching applied jobs:', err);
@@ -146,41 +144,6 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
     setMessage(`Connected via WhatsApp for ${jobTitle}`);
   };
 
-  const handleDownloadResume = async () => {
-    if (!user.resume) {
-      setMessage('No resume available to download');
-      return;
-    }
-    try {
-      // const baseUrl = Platform.OS === 'web' ? 'http://localhost:5000' : 'http://192.168.31.124:5000';
-      const baseUrl = Platform.OS === "web" ? "https://jobconnector-backend.onrender.com" : "https://jobconnector-backend.onrender.com";
-      const resumeUrl = `${baseUrl}${user.resume}`;
-      console.log('Downloading resume from:', resumeUrl);
-
-      if (Platform.OS === 'web') {
-        window.open(resumeUrl, '_blank');
-        setMessage('Resume opened in new tab');
-      } else {
-        const fileUri = `${FileSystem.cacheDirectory}resume.pdf`;
-        const downloadResumable = FileSystem.createDownloadResumable(
-          resumeUrl,
-          fileUri,
-          {},
-          (downloadProgress) => {
-            const progress = downloadProgress.totalBytesWritten / downloadProgress.totalBytesExpectedToWrite;
-            console.log('Download progress:', progress);
-          }
-        );
-        const { uri } = await downloadResumable.downloadAsync();
-        const contentUri = await FileSystem.getContentUriAsync(uri);
-        await Linking.openURL(contentUri);
-        setMessage('Resume downloaded and opened successfully');
-      }
-    } catch (error) {
-      console.error('Download error:', error);
-      setMessage('Error downloading resume: ' + error.message);
-    }
-  };
 
   const handleEditProfile = () => {
     navigation.navigate('SeekerProfile', { user });
@@ -211,13 +174,10 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
   const renderJobItem = ({ item }) => (
     <View style={styles.jobItem}>
       <Text style={[styles.jobText, isDarkMode ? styles.darkText : styles.lightText]}>
-        {item.jobTitle} - {item.postedBy?.companyName || 'Unknown Provider'}
+        {item.skills} - {item.postedBy?.companyName || 'Unknown Provider'}
       </Text>
       <Text style={[styles.jobDetail, isDarkMode ? styles.darkText : styles.lightText]}>
         Location: {item.location || 'N/A'}
-      </Text>
-      <Text style={[styles.jobDetail, isDarkMode ? styles.darkText : styles.lightText]}>
-        Skills: {formatSkills(item.skills)}
       </Text>
       <View style={styles.jobActions}>
         <TouchableOpacity
@@ -228,8 +188,11 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
           disabled={item.applied}
         >
           <Animated.View style={{ transform: [{ scale: applyScales[item._id]?.apply || new Animated.Value(1) }] }}>
-            <Text style={styles.buttonText}>{item.applied ? 'Applied' : 'Apply'}</Text>
-          </Animated.View>
+          <Text style={styles.buttonText}>
+            {item.applicants.some(applicant => applicant.seekerId === user._id) ? 'Applied' : 'Apply'}
+          </Text>
+        </Animated.View>
+
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton]}
@@ -301,7 +264,7 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
                   WhatsApp: {user.whatsappNumber || 'N/A'}
                 </Text>
                 <Text style={[styles.profileText, isDarkMode ? styles.darkText : styles.lightText]}>
-                  Skills: {formatSkills(user.skills)}
+                  Job Names: {formatSkills(user.skills)}
                 </Text>
                 <Text style={[styles.profileText, isDarkMode ? styles.darkText : styles.lightText]}>
                   Experience: {user.experience || 0} years
@@ -309,31 +272,18 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
                 <Text style={[styles.profileText, isDarkMode ? styles.darkText : styles.lightText]}>
                   Location: {user.location || 'N/A'}
                 </Text>
-                <Text style={[styles.profileText, isDarkMode ? styles.darkText : styles.lightText]}>
-                  Resume: {user.resume ? user.resume.split('/').pop() : 'Not uploaded'}
-                </Text>
-                {user.resume && (
-                  <TouchableOpacity
-                    style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                    onPress={handleDownloadResume}
-                    onPressIn={() => handlePressIn(downloadScale)}
-                    onPressOut={() => handlePressOut(downloadScale)}
-                  >
-                    <Animated.View style={{ transform: [{ scale: downloadScale }] }}>
-                      <Text style={styles.buttonText}>View/Download Resume</Text>
-                    </Animated.View>
-                  </TouchableOpacity>
-                )}
               </View>
 
               <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Search Jobs</Text>
+              <Text syle={[styles.label]} >Search By Job Name</Text>
               <TextInput
                 style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                 value={searchSkills}
                 onChangeText={setSearchSkills}
-                placeholder="Enter skills (comma-separated)"
+                placeholder="Enter Job Names (comma-separated)"
                 placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
               />
+              <Text syle={[styles.label]} >Search By Location</Text>
               <TextInput
                 style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                 value={searchLocation}
@@ -386,7 +336,7 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
                 renderItem={({ item }) => (
                   <View style={styles.appliedJobItem}>
                     <View style={styles.jobDetails}>
-                      <Text style={styles.appliedJobText}>{item.jobTitle} - {item.location}</Text>
+                      <Text style={styles.appliedJobText}>{item.skills} - {item.location}</Text>
                     </View>
                     <TouchableOpacity style={styles.detailsButton} onPress={() => handleViewJobDetails(item)}>
                       <Text style={styles.detailsButtonText}>View Details</Text>
@@ -408,10 +358,10 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
               <Text style={styles.modalTitle}>Job Details</Text>
               {selectedJob && (
                 <>
-                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Title:</Text> {selectedJob.jobTitle}</Text>
-                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Company:</Text> {selectedJob.companyName}</Text>
+                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Title:</Text> {selectedJob.skills}</Text>
+                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Company:</Text> {selectedJob.postedBy.companyName}</Text>
                   <Text style={styles.jobDetailText}><Text style={styles.bold}>Location:</Text> {selectedJob.location}</Text>
-                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Salary:</Text> {selectedJob.salary || 'Not disclosed'}</Text>
+                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Salary:</Text> {selectedJob.maxCTC || 'Not disclosed'}</Text>
                 </>
               )}
               <TouchableOpacity style={styles.closeButton} onPress={() => setShowJobDetails(false)}>
@@ -460,7 +410,13 @@ const styles = StyleSheet.create({
   appliedJobItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10, borderBottomWidth: 1, borderColor: '#ddd' },
   appliedJobText: { fontSize: 16 },
   jobDetails: { flex: 1 },
-  
+  label: {
+    position: "absolute",
+    fontSize: 15,
+    fontWeight: "700",
+    zIndex: 10,
+    paddingHorizontal: 4,
+  },
   detailsButton: { backgroundColor: '#007AFF', padding: 8, borderRadius: 5 },
   detailsButtonText: { color: '#fff', fontSize: 14 },
 

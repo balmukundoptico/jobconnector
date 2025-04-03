@@ -79,47 +79,56 @@ const ProviderProfile = ({ isDarkMode, toggleDarkMode, route }) => {
             {isEditMode ? "Update Your Profile" : "Set Up Your Provider Profile"}
           </Text>
           {!profileCreated ? (
-            <>
-              <TextInput
-                style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                value={formData.companyName}
-                onChangeText={(text) => handleChange('companyName', text)}
-                placeholder="Company Name"
-                placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-              />
-              <TextInput
-                style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                value={formData.hrName}
-                onChangeText={(text) => handleChange('hrName', text)}
-                placeholder="HR Name"
-                placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-              />
-              <TextInput
-                style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                value={formData.hrWhatsappNumber}
-                onChangeText={(text) => handleChange('hrWhatsappNumber', text)}
-                placeholder="HR WhatsApp Number"
-                placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-              />
-              <TextInput
-                style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                value={formData.email}
-                onChangeText={(text) => handleChange('email', text)}
-                placeholder="Email"
-                placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-              />
-              <TouchableOpacity
-                style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-                onPress={handleSubmitProfile}
-                onPressIn={() => handlePressIn(submitScale)}
-                onPressOut={() => handlePressOut(submitScale)}
-                activeOpacity={0.8}
-              >
-                <Animated.View style={[styles.buttonInner, { transform: [{ scale: submitScale }] }]}>
-                  <Text style={styles.buttonText}>Save Profile</Text>
-                </Animated.View>
-              </TouchableOpacity>
-            </>
+           <View>
+           <Text style={styles.label}>Company Name</Text>
+           <TextInput
+             style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+             value={formData.companyName}
+             onChangeText={(text) => handleChange('companyName', text)}
+             placeholder="Company Name"
+             placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+           />
+         
+           <Text style={styles.label}>HR Name</Text>
+           <TextInput
+             style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+             value={formData.hrName}
+             onChangeText={(text) => handleChange('hrName', text)}
+             placeholder="HR Name"
+             placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+           />
+         
+           <Text style={styles.label}>HR WhatsApp Number</Text>
+           <TextInput
+             style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+             value={formData.hrWhatsappNumber}
+             onChangeText={(text) => handleChange('hrWhatsappNumber', text)}
+             placeholder="HR WhatsApp Number"
+             placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+           />
+         
+           <Text style={styles.label}>Email</Text>
+           <TextInput
+             style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+             value={formData.email}
+             onChangeText={(text) => handleChange('email', text)}
+             placeholder="Email"
+             placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+           />
+         
+           <TouchableOpacity
+             style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
+             onPress={handleSubmitProfile}
+             onPressIn={() => handlePressIn(submitScale)}
+             onPressOut={() => handlePressOut(submitScale)}
+             activeOpacity={0.8}
+           >
+             <Animated.View style={[styles.buttonInner, { transform: [{ scale: submitScale }] }]}>
+               <Text style={styles.buttonText}>Save Profile</Text>
+             </Animated.View>
+           </TouchableOpacity>
+         </View>
+         
           ) : (
             <TouchableOpacity
               style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
@@ -158,7 +167,13 @@ const styles = StyleSheet.create({
   buttonText: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
   message: { marginTop: 10, textAlign: 'center' },
   lightText: { color: '#000' },
-  darkText: { color: '#ddd' }
+  darkText: { color: '#ddd' },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 5,
+  }
 });
 
 export default ProviderProfile;

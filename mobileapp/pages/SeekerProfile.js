@@ -37,8 +37,6 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
     lastWorkingDate: "",
     bio: "",
   });
-  const [resumeFile, setResumeFile] = useState(null);
-  const [resumeFileName, setResumeFileName] = useState("");
   const [message, setMessage] = useState("");
   const [profileCreated, setProfileCreated] = useState(false);
   const [isEditMode, setIsEditMode] = useState(!!route?.params?.user);
@@ -55,21 +53,13 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
         fullName: route.params.user.fullName || "",
         whatsappNumber: route.params.user.whatsappNumber || "",
         email: route.params.user.email || "",
-        skillType: route.params.user.skillType || "IT",
         skills: route.params.user.skills?.join(", ") || "",
         experience: route.params.user.experience?.toString() || "",
         location: route.params.user.location || "",
         currentCTC: route.params.user.currentCTC?.toString() || "",
         expectedCTC: route.params.user.expectedCTC?.toString() || "",
         noticePeriod: route.params.user.noticePeriod || "",
-        lastWorkingDate: route.params.user.lastWorkingDate || "",
-        bio: route.params.user.bio || "",
       });
-      setResumeFileName(
-        route.params.user.resume
-          ? route.params.user.resume.split("/").pop()
-          : ""
-      );
     }
   }, [route, isEditMode]);
 
@@ -80,46 +70,6 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
   const handleFocus = (name) => setFocusedField(name);
   const handleBlur = () => setFocusedField(null);
 
-  const handleFilePick = async () => {
-    try {
-      console.log("Picking resume file...");
-      const result = await DocumentPicker.getDocumentAsync({
-        type: [
-          "application/pdf",
-          "application/msword",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        ],
-      });
-      console.log("Picker result:", JSON.stringify(result, null, 2));
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const selectedFile = result.assets[0];
-        let fileData;
-        if (Platform.OS === "web") {
-          const response = await fetch(selectedFile.uri);
-          const blob = await response.blob();
-          fileData = new File([blob], selectedFile.name || "resume.pdf", {
-            type: selectedFile.mimeType || "application/pdf",
-          });
-        } else {
-          fileData = {
-            uri: selectedFile.uri,
-            name: selectedFile.name || "resume.pdf",
-            type: selectedFile.mimeType || "application/pdf",
-          };
-        }
-        setResumeFile(fileData);
-        setResumeFileName(selectedFile.name || "resume.pdf");
-        setMessage("Resume selected: " + (selectedFile.name || "resume.pdf"));
-      } else {
-        setMessage("No file selected");
-      }
-    } catch (error) {
-      console.error("handleFilePick error:", error);
-      setMessage("Error selecting file: " + error.message);
-      setResumeFile(null);
-      setResumeFileName("");
-    }
-  };
 
   const handleSubmitProfile = async () => {
     if (!formData.fullName) {
@@ -150,10 +100,6 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
       profileData.append("noticePeriod", formData.noticePeriod || "");
       profileData.append("lastWorkingDate", formData.lastWorkingDate || "");
       profileData.append("bio", formData.bio || "");
-
-      if (resumeFile) {
-        profileData.append("resume", resumeFile, resumeFile.name);
-      }
 
       if (isEditMode) {
         profileData.append("_id", route.params.user._id);
@@ -284,82 +230,24 @@ const SeekerProfile = ({ isDarkMode, toggleDarkMode, route }) => {
                   "WhatsApp Number",
                   "whatsappNumber",
                   "text",
-                  "Enter WhatsApp number"
-                )}
-                {renderInput("Email", "email", "email", "Enter email")}
-                {renderInput(
-                  "Skill Type",
-                  "skillType",
-                  "text",
-                  "Enter skill type"
+                  "Enter WhatsApp number",
+                  { editable: isEditMode ? false : true }
                 )}
                 {renderInput(
-                  "Skills",
-                  "skills",
-                  "text",
-                  "Enter skills (comma-separated)"
+                  "Email",
+                  "email",
+                  "email",
+                  "Enter email",
+                  { editable: isEditMode ? false : true }
                 )}
-                {renderInput(
-                  "Experience (years)",
-                  "experience",
-                  "number",
-                  "Enter experience"
-                )}
+                {renderInput("Job Name", "skills", "text", "Enter Job Names")}
+                {renderInput("Experience (months)", "experience", "number", "Enter experience")}
                 {renderInput("Location", "location", "text", "Enter location")}
-                {renderInput(
-                  "Current CTC",
-                  "currentCTC",
-                  "number",
-                  "Enter current CTC"
-                )}
-                {renderInput(
-                  "Expected CTC",
-                  "expectedCTC",
-                  "number",
-                  "Enter expected CTC"
-                )}
-                {renderInput(
-                  "Notice Period",
-                  "noticePeriod",
-                  "text",
-                  "Enter notice period"
-                )}
-                {renderInput(
-                  "Last Working Date",
-                  "lastWorkingDate",
-                  "text",
-                  "YYYY-MM-DD"
-                )}
-                {renderInput("Bio", "bio", "text", "Enter bio", {
-                  multiline: true,
-                })}
+                {renderInput("Current Salary", "currentCTC", "number", "Enter current Salary")}
+                {renderInput("Expected Salary", "expectedCTC", "number", "Enter Expected Salary")}
+                {renderInput("Join Within (Days)", "noticePeriod", "text", "Join Within Days")}
 
-                <Text
-                  style={[
-                    styles.subtitle,
-                    isDarkMode ? styles.darkText : styles.lightText,
-                  ]}
-                >
-                  {resumeFileName
-                    ? `Selected: ${resumeFileName}`
-                    : "Upload Resume (PDF/DOCX)"}
-                </Text>
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={handleFilePick}
-                  onPressIn={() => handlePressIn(uploadScale)}
-                  onPressOut={() => handlePressOut(uploadScale)}
-                  activeOpacity={0.8}
-                >
-                  <Animated.View
-                    style={[
-                      styles.buttonWrap,
-                      { transform: [{ scale: uploadScale }] },
-                    ]}
-                  >
-                    <Text style={styles.buttonText}>Pick Resume File</Text>
-                  </Animated.View>
-                </TouchableOpacity>
+                
                 <View style={{ height: 10 }} />
                 <TouchableOpacity
                   style={styles.button}
