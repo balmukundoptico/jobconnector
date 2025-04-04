@@ -2,7 +2,7 @@ import React, { useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Alert, Modal } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Header = ({ title, toggleDarkMode, isDarkMode }) => {
   const navigation = useNavigation();
@@ -31,11 +31,11 @@ const Header = ({ title, toggleDarkMode, isDarkMode }) => {
   // Logout Function
   const handleLogout = async () => {
     try {
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('userRole');
+      // await AsyncStorage.removeItem('token');
+      // await AsyncStorage.removeItem('userRole');
       navigation.reset({
         index: 0,
-        routes: [{ name: 'Home' }],
+        routes: [{ name: 'JobsList' }],
       });
     } catch (error) {
       console.error('Logout error:', error);

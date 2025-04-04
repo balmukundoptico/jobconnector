@@ -184,9 +184,9 @@ exports.sendWhatsAppMessage = async (req, res) => {
   res.json({ message: 'WhatsApp message sent (placeholder)' });
 };
 
-exports.getTrendingSkills = async (req, res) => {
+exports.getTrendingSkills = async (req, res) => {               
   try {
-    const response = await JobPosting.find({ available: true }).populate('postedBy', 'companyName');
+    const response = await JobPosting.find({ available: true }).populate('postedBy', 'companyName hrName hrWhatsappNumber')
     const trendingJobs = response.slice(0, 5);
     return res.status(200).send({
       success:true,

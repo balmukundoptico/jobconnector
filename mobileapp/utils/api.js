@@ -45,7 +45,7 @@ export const getProfile = async (data) => {
     console.error('getProfile error:', error.response?.data || error.message);
     throw error;
   }
-};
+};  
 
 // Seeker profile with FormData for resume upload
 export const createSeekerProfile = (data) => {

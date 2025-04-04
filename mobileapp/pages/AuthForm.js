@@ -3,7 +3,7 @@ import React, { useState } from 'react'; // React core
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native'; // RN components
 import { useNavigation } from '@react-navigation/native'; // Navigation hook
 import { requestOTP, verifyOTP } from '../utils/api'; // API functions
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // AuthForm component with email OTP support
 export default function AuthForm({ isDarkMode, toggleDarkMode, route }) {
@@ -35,6 +35,7 @@ export default function AuthForm({ isDarkMode, toggleDarkMode, route }) {
       setMessage(response.data.message); // Show message
       setOtpSent(true); // Mark OTP sent
       setServerOtp(response.data.serverOtp);
+      console.log("request otp respone", response);
     } catch (error) {
       setMessage(error.response?.data?.message || 'Error requesting OTP');
     }
@@ -86,7 +87,7 @@ export default function AuthForm({ isDarkMode, toggleDarkMode, route }) {
   
       if (response.data.success) {
         // Save user details in AsyncStorage
-        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+        // await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
   
         // Navigate to the correct screen
         navigation.navigate(

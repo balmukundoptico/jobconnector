@@ -138,22 +138,18 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
   };
 
   const handleWhatsAppConnect = (number, jobTitle) => {
+    if (!number.startsWith('+')) {
+      number = '+91' + number; // Change country code if needed
+    }
+  console.log("whatsapp number = ", number);
     const defaultMessage = `Hi, I'm interested in your job posting: ${jobTitle}`;
     Linking.openURL(`https://api.whatsapp.com/send?phone=${number.replace(/\D/g, '')}&text=${encodeURIComponent(defaultMessage)}`);
     setAppliedJobs(prev => [...prev, { jobId: jobTitle, title: jobTitle, status: 'Connected' }]);
-    setMessage(`Connected via WhatsApp for ${jobTitle}`);
   };
 
 
   const handleEditProfile = () => {
     navigation.navigate('SeekerProfile', { user });
-  };
-
-  const handleLogout = () => {
-    navigation.reset({
-      index: 0,
-      routes: [{ name: 'Home' }],
-    });
   };
 
   const handlePressIn = (scale) => Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start();
@@ -201,7 +197,7 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton]}
-          onPress={() => handleWhatsAppConnect(item.postedBy?.hrWhatsappNumber || '', item.jobTitle)}
+          onPress={() => handleWhatsAppConnect(item.postedBy?.hrWhatsappNumber || '', item.skills[0])}
           onPressIn={() => handlePressIn(connectScales[item._id]?.connect)}
           onPressOut={() => handlePressOut(connectScales[item._id]?.connect)}
         >
@@ -240,16 +236,6 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
           >
             <Animated.View style={{ transform: [{ scale: profileScale }] }}>
               <Text style={styles.buttonText}>View Applied Jobs</Text>
-            </Animated.View>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]}
-            onPress={handleLogout}
-            onPressIn={() => handlePressIn(logoutScale)}
-            onPressOut={() => handlePressOut(logoutScale)}
-          >
-            <Animated.View style={{ transform: [{ scale: logoutScale }] }}>
-              <Text style={styles.buttonText}>Logout</Text>
             </Animated.View>
           </TouchableOpacity>
         </View>
@@ -337,7 +323,7 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
               <Text style={styles.modalTitle}>Applied Jobs</Text>
               <FlatList
                 data={appliedJobs}
-                keyExtractor={(item) => item._id.toString()}
+                keyExtractor={(item, index) => (item?._id ? item._id.toString() : index.toString())}
                 renderItem={({ item }) => (
                   <View style={styles.appliedJobItem}>
                     <View style={styles.jobDetails}>
@@ -374,6 +360,22 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
                   <Text style={styles.jobDetailText}><Text style={styles.bold}>Company:</Text> {selectedJob.postedBy.companyName}</Text>
                   <Text style={styles.jobDetailText}><Text style={styles.bold}>Location:</Text> {selectedJob.location}</Text>
                   <Text style={styles.jobDetailText}><Text style={styles.bold}>Salary:</Text> {selectedJob.maxCTC || 'Not disclosed'}</Text>
+                  <TouchableOpacity 
+                  style={{
+                    backgroundColor: 'green',
+                    paddingVertical: 10,
+                    paddingHorizontal: 15,
+                    borderRadius: 5,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginVertical: 5,
+                  }}
+                  onPress={() => handleWhatsAppConnect(selectedJob.postedBy?.hrWhatsappNumber || '', selectedJob.skills[0])}
+                >
+                  <Text style={{ color: 'white', fontSize: 14, fontWeight: 'bold' }}>
+                    WhatsApp
+                  </Text>
+                </TouchableOpacity>
                 </>
               )}
               <TouchableOpacity style={styles.closeButton} onPress={() => setShowJobDetails(false)}>

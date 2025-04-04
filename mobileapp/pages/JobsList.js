@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// import AsyncStorage from '@react-native-async-storage/async-storage';
 import { searchJobs } from '../utils/api';
 
 const JobCard = ({ item, isDarkMode, isSelected, onSelect, handleApply, handleWhatsApp, appliedJobs, whatsappedJobs }) => {
@@ -126,8 +126,9 @@ export default function JobsList({ isDarkMode, toggleDarkMode, route }) {
     // Create an async function inside the effect
     const checkAuthAndFetchJobs = async () => {
       try {
-        const user = await AsyncStorage.getItem('user') || null;
-        setIsAuthenticated(!!user);
+        // const user = await AsyncStorage.getItem('user') || null;
+        // if(!user){}
+        // setIsAuthenticated(!!user);
         await fetchJobs();
       } catch (error) {
         console.error('Error in useEffect:', error);

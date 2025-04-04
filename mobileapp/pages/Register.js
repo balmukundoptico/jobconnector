@@ -42,6 +42,7 @@ const Register = ({ isDarkMode, toggleDarkMode }) => {
       setServerOtp(response.data.serverOtp);
       setMessage(response.data.message);
       setOtpSent(true);
+      console.log("otp response", response);
     } catch (error) {
       console.error('OTP Request Error:', error.response?.data || error.message);
       setMessage(error.response?.data?.message || 'Error sending OTP');
