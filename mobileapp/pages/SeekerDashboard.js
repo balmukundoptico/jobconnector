@@ -173,13 +173,18 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
 
   const renderJobItem = ({ item }) => (
     <View style={styles.jobItem}>
-      <Text style={[styles.jobText, isDarkMode ? styles.darkText : styles.lightText]}>
-        {item.skills} - {item.postedBy?.companyName || 'Unknown Provider'}
+      <Text style={[isDarkMode ? styles.darkText : styles.lightText]}>
+      {item.skills?.map((skill, index) => (
+      <Text key={index}>
+        {skill}
+        {index !== item.skills.length - 1 ? " | " : ""}
+        </Text>
+        ))}
       </Text>
       <Text style={[styles.jobDetail, isDarkMode ? styles.darkText : styles.lightText]}>
         Location: {item.location || 'N/A'}
       </Text>
-      <View style={styles.jobActions}>
+      <View style={styles.jobActions}>                                    
         <TouchableOpacity
           style={[styles.actionButton, isDarkMode ? styles.darkButton : styles.lightButton, item.applied && styles.disabledButton]}
           onPress={() => handleApply(item._id)}
@@ -355,10 +360,17 @@ export default function SeekerDashboard({ isDarkMode, toggleDarkMode, route }) {
         <Modal visible={showJobDetails} transparent animationType="slide">
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Job Details</Text>
+              <Text style={[styles.modalTitle, styles.jobDetailText]}>Job Details</Text>
               {selectedJob && (
                 <>
-                  <Text style={styles.jobDetailText}><Text style={styles.bold}>Title:</Text> {selectedJob.skills}</Text>
+                  <Text style={styles.jobDetailMain}>
+                  {selectedJob.skills?.map((skill, index) => (
+                    <Text key={index}>
+                      {skill}
+                      {index !== selectedJob.skills.length - 1 ? " | " : ""}
+                    </Text>
+                  ))}
+                </Text>
                   <Text style={styles.jobDetailText}><Text style={styles.bold}>Company:</Text> {selectedJob.postedBy.companyName}</Text>
                   <Text style={styles.jobDetailText}><Text style={styles.bold}>Location:</Text> {selectedJob.location}</Text>
                   <Text style={styles.jobDetailText}><Text style={styles.bold}>Salary:</Text> {selectedJob.maxCTC || 'Not disclosed'}</Text>
@@ -424,5 +436,9 @@ const styles = StyleSheet.create({
   bold: { fontWeight: 'bold' },
   
   closeButton: { backgroundColor: '#007AFF', marginTop: 10, padding: 10, borderRadius: 5, alignItems: 'center' },
+  jobDetailMain:{
+    fontSize:20,
+    fontWeight:'bold'
+  }
 }) 
 // working code with search

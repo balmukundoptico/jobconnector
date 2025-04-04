@@ -86,7 +86,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
       const response = await postJob(jobData);
       Alert.alert('Success', 'Job posted successfully');
       console.log('Job created successfully:', response);
-      setJobTitle('');
+      setSkills('');
       setExperienceRequired('');
       setLocation('');
       setMaxCTC('');
@@ -303,7 +303,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
               </TouchableOpacity>
 
               <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Search Job Seekers</Text>
-              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Search " value={seekerQuery} onChangeText={setSeekerQuery} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
+              <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Search By Job Name" value={seekerQuery} onChangeText={setSeekerQuery} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
               <TextInput style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]} placeholder="Search by Location" value={locationQuery} onChangeText={setLocationQuery} placeholderTextColor={isDarkMode ? '#888' : '#ccc'} />
               <TouchableOpacity style={[styles.button, isDarkMode ? styles.darkButton : styles.lightButton]} onPress={handleSearchSeekers} onPressIn={() => handlePressIn(searchScale)} onPressOut={() => handlePressOut(searchScale)} activeOpacity={0.8}>
                 <Animated.View style={{ transform: [{ scale: searchScale }] }}>
@@ -322,7 +322,10 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
               />
 
               <Text style={[styles.title, isDarkMode ? styles.darkText : styles.lightText]}>Your Posted Jobs</Text>
-              <View style={styles.filterContainer}>
+              {
+                postedJobs.length > 0 ? 
+                (
+                  <View style={styles.filterContainer}>
                 <TouchableOpacity
                   style={[styles.filterButton, jobFilter === 'All' && styles.activeFilter]}
                   onPress={() => setJobFilter('All')}
@@ -342,6 +345,9 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                   <Text style={[styles.filterText, isDarkMode ? styles.darkText : styles.lightText]}>Inactive</Text>
                 </TouchableOpacity>
               </View>
+                ) : 
+                (<Text>No Job Posted By Your</Text>)
+              }
               <FlatList
                 data={filteredJobs()}
                 keyExtractor={(item) => item._id.toString()}
@@ -350,7 +356,16 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                     <View style={styles.jobItem}>
                       <View style={styles.jobNameContainer}>
                         <TouchableOpacity onPress={() => handleEditJob(item)}>
-                          <Text style={[styles.jobText, isDarkMode ? styles.darkText : styles.lightText]}>{item.skills[0]}</Text>
+
+                         <Text style={[styles.jobTitle, isDarkMode ? styles.darkText : styles.lightText]}>
+                            {item.skills?.map((skill, index) => (
+                            <Text key={index}>
+                              {skill}
+                              {index !== item.skills.length - 1 ? " | " : ""}
+                            </Text>
+                           ))}
+                        </Text>
+
                         </TouchableOpacity>
                         <TouchableOpacity
                           onPress={() => handleActiveInactiveJob(item)}
@@ -406,7 +421,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                     <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
                       <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Post a New Job</Text>
                       
-                      <Text style={styles.label}>Job Names (comma-separated)</Text>
+                      <Text style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Job Names (comma-separated)</Text>
                       <TextInput
                       style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                       placeholder="Skills (comma-separated)"
@@ -415,7 +430,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                       placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                     />
                       
-                      <Text style={styles.label}>Experience Required (Months)</Text>
+                      <Text  style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Experience Required (Months)</Text>
                       <TextInput
                         style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                         placeholder="Experience Required (Months)"
@@ -425,7 +440,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                         placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                       />
                       
-                      <Text style={styles.label}>Location</Text>
+                      <Text  style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Location</Text>
                       <TextInput
                         style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                         placeholder="Location"
@@ -434,17 +449,17 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                         placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                       />
                       
-                      <Text style={styles.label}>Salary</Text>
+                      <Text  style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Salary/Month</Text>
                       <TextInput
                         style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-                        placeholder="Salary"
+                        placeholder="EnterSalary Per Month"
                         value={maxCTC}
                         onChangeText={setMaxCTC}
                         keyboardType="numeric"
                         placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                       />
                       
-                      <Text style={styles.label}>Join Within Days</Text>
+                      <Text  style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Join Within Days</Text>
                       <TextInput
                         style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                         placeholder="Join Withing Days"
@@ -544,7 +559,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                 <View style={[styles.modalContent, isDarkMode ? styles.darkModal : styles.lightModal]}>
                   <Text style={[styles.modalTitle, isDarkMode ? styles.darkText : styles.lightText]}>Edit Job</Text>
                   
-                  <Text style={styles.label}>Job Names (comma-separated)</Text>
+                  <Text  style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Job Names (comma-separated)</Text>
                   <TextInput
                       style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                       placeholder="Skills (comma-separated)"
@@ -553,7 +568,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                       placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                     />
                   
-                  <Text style={styles.label}>Experience Required (Months)</Text>
+                  <Text style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Experience Required (Months)</Text>
                   <TextInput
                     style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                     placeholder="Experience Required (Months)"
@@ -563,7 +578,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                     placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                   />
                   
-                  <Text style={styles.label}>Location</Text>
+                  <Text  style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Location</Text>
                   <TextInput
                     style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                     placeholder="Location"
@@ -572,7 +587,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                     placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                   />
                   
-                  <Text style={styles.label}>Salary</Text>
+                  <Text  style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Salary</Text>
                   <TextInput
                     style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                     placeholder="Salary"
@@ -582,7 +597,7 @@ export default function ProviderDashboard({ isDarkMode, toggleDarkMode, route })
                     placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
                   />
                   
-                  <Text style={styles.label}>Join Within Days</Text>
+                  <Text  style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Join Within Days</Text>
                   <TextInput
                     style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
                     placeholder="Join Within Days"
@@ -657,6 +672,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     margin: 5,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+    marginBottom: 5,
+  },
+  lightLabel:{
+    fontSize: 16,
+    fontWeight: 'white',
+    color: '#fff',
+    marginBottom: 5,
   },
   jobActive: { backgroundColor: 'green' },
   jobInactive: { backgroundColor: 'red' },

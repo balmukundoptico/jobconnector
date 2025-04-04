@@ -1,41 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Modal, Linking, ScrollView, Alert, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
-import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { searchJobs } from '../utils/api';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
-
-const ReanimatedView = Reanimated.createAnimatedComponent(View);
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { searchJobs } from '../utils/api';
 
 const JobCard = ({ item, isDarkMode, isSelected, onSelect, handleApply, handleWhatsApp, appliedJobs, whatsappedJobs }) => {
-  const tiltX = useSharedValue(0);
-  const tiltY = useSharedValue(0);
   const glowAnim = useRef(new Animated.Value(0)).current;
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { perspective: 1000 },
-      { rotateX: `${tiltX.value}deg` },
-      { rotateY: `${tiltY.value}deg` },
-      { translateY: withSpring(isSelected ? -10 : 0) },
-    ],
-  }));
-
-  const onGestureEvent = (event) => {
-    const { translationX, translationY } = event.nativeEvent;
-    tiltX.value = Math.min(Math.max(translationX / 10, -15), 15);
-    tiltY.value = Math.min(Math.max(-translationY / 10, -15), 15);
-  };
-
-  const onHandlerStateChange = (event) => {
-    if (event.nativeEvent.state === 5) {
-      tiltX.value = withSpring(0);
-      tiltY.value = withSpring(0);
-      onSelect(item._id);
-    }
-  };
 
   const triggerGlow = () => {
     Animated.sequence([
@@ -52,45 +25,54 @@ const JobCard = ({ item, isDarkMode, isSelected, onSelect, handleApply, handleWh
     ]).start();
   };
 
+  // Modified glow style to use opacity instead of borderWidth
   const glowStyle = {
-    borderWidth: glowAnim.interpolate({
+    borderColor: glowAnim.interpolate({
       inputRange: [0, 1],
-      outputRange: [isSelected ? 2 : 0, 4],
+      outputRange: [
+        'transparent',
+        isDarkMode ? '#00ffcc' : '#007AFF'
+      ]
     }),
-    borderColor: isDarkMode ? '#00ffcc' : '#007AFF',
+    borderWidth: isSelected ? 2 : 0,
   };
 
   const isApplied = appliedJobs.has(item._id);
   const isWhatsapped = whatsappedJobs.has(item._id);
 
   return (
-    <PanGestureHandler onGestureEvent={onGestureEvent} onHandlerStateChange={onHandlerStateChange}>
-      <ReanimatedView
+    <TouchableOpacity 
+      activeOpacity={0.8}
+      onPress={() => onSelect(item._id)}
+    >
+      <Animated.View
         style={[
           styles.jobCard,
           isDarkMode ? styles.darkJobCard : styles.lightJobCard,
           isSelected && (isDarkMode ? styles.darkSelectedCard : styles.lightSelectedCard),
-          animatedStyle,
           glowStyle,
         ]}
       >
+        {/* Rest of the JobCard content remains the same */}
         <Text style={[styles.jobTitle, isDarkMode ? styles.darkText : styles.lightText]}>
-          {item.jobTitle}
+          {item.skills?.map((skill, index) => (
+            <Text key={index}>
+              {skill}
+              {index !== item.skills.length - 1 ? " | " : ""}
+            </Text>
+          ))}
         </Text>
         <Text style={[styles.jobDetails, isDarkMode ? styles.darkSubText : styles.lightSubText]}>
           Company: {item.postedBy?.companyName || 'N/A'}
         </Text>
         <Text style={[styles.jobDetails, isDarkMode ? styles.darkSubText : styles.lightSubText]}>
-          Skills: {item.skills?.join(', ') || 'N/A'}
-        </Text>
-        <Text style={[styles.jobDetails, isDarkMode ? styles.darkSubText : styles.lightSubText]}>
           Location: {item.location || 'N/A'}
         </Text>
         <Text style={[styles.jobDetails, isDarkMode ? styles.darkSubText : styles.lightSubText]}>
-          Max CTC: {item.maxCTC || 'N/A'}
+          Salary: {item.maxCTC || 'N/A'}
         </Text>
         <Text style={[styles.jobDetails, isDarkMode ? styles.darkSubText : styles.lightSubText]}>
-          Notice Period: {item.noticePeriod || 'N/A'}
+          Join Within: {item.noticePeriod ? `${item.noticePeriod} Days` : 'N/A'}
         </Text>
         <View style={styles.jobActions}>
           <TouchableOpacity
@@ -122,8 +104,8 @@ const JobCard = ({ item, isDarkMode, isSelected, onSelect, handleApply, handleWh
             </TouchableOpacity>
           )}
         </View>
-      </ReanimatedView>
-    </PanGestureHandler>
+      </Animated.View>
+    </TouchableOpacity>
   );
 };
 
@@ -136,15 +118,25 @@ export default function JobsList({ isDarkMode, toggleDarkMode, route }) {
   const [selectedJobId, setSelectedJobId] = useState(null);
   const [appliedJobs, setAppliedJobs] = useState(new Set());
   const [whatsappedJobs, setWhatsappedJobs] = useState(new Set());
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const user = route?.params?.user || null;
-    // const token = localStorage.getItem('token');
-    setIsAuthenticated(!!user || '');
-    fetchJobs();
-  }, [route]);
+    // Create an async function inside the effect
+    const checkAuthAndFetchJobs = async () => {
+      try {
+        const user = await AsyncStorage.getItem('user') || null;
+        setIsAuthenticated(!!user);
+        await fetchJobs();
+      } catch (error) {
+        console.error('Error in useEffect:', error);
+      }
+    };
+  
+    // Call the async function
+    checkAuthAndFetchJobs();
+  }, [route]); // Make sure to include all dependencies
 
   useEffect(() => {
     if (jobs.length > 0) {
@@ -158,15 +150,17 @@ export default function JobsList({ isDarkMode, toggleDarkMode, route }) {
 
   const fetchJobs = async (filters = {}) => {
     try {
-      const searchFilters = { ...filters, available: true }; // Explicitly request active jobs
+      setLoading(true);
+      const searchFilters = { ...filters, available: true };
       const response = await searchJobs(searchFilters);
-      const fetchedJobs = (response.data || []).filter(job => job.available === true); // Client-side filter
-      console.log('Fetched Jobs in JobsList:', fetchedJobs); // Debug log
+      const fetchedJobs = (response.data || []).filter(job => job.available === true);
       setJobs(fetchedJobs);
     } catch (error) {
       Alert.alert('Error', 'Failed to fetch jobs: ' + error.message);
       console.error('fetchJobs error:', error);
       setJobs([]);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -175,11 +169,11 @@ export default function JobsList({ isDarkMode, toggleDarkMode, route }) {
       const searchData = {
         skills: searchSkills.split(',').map(skill => skill.trim()).filter(skill => skill),
         location: searchLocation.trim(),
-        available: true, // Explicitly request active jobs
+        available: true,
       };
       const response = await searchJobs(searchData);
-      const fetchedJobs = (response.data || []).filter(job => job.available === true); // Client-side filter
-      console.log('Searched Jobs in JobsList:', fetchedJobs); // Debug log
+      const fetchedJobs = (response.data || []).filter(job => job.available === true);
+      console.log('Searched Jobs in JobsList:', fetchedJobs);
       setJobs(fetchedJobs);
       setSelectedJobId(null);
     } catch (error) {
@@ -237,7 +231,7 @@ export default function JobsList({ isDarkMode, toggleDarkMode, route }) {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={[styles.container, isDarkMode ? styles.darkContainer : styles.lightContainer]}>
-        <Header title="Job Listings" toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
+        <Header title="Job Connect" toggleDarkMode={toggleDarkMode} isDarkMode={isDarkMode} />
         <ScrollView contentContainerStyle={styles.scrollContent}>
           <View style={styles.content}>
             <View style={styles.authButtonsContainer}>
@@ -288,7 +282,7 @@ export default function JobsList({ isDarkMode, toggleDarkMode, route }) {
               renderItem={renderJobItem}
               ListEmptyComponent={
                 <Text style={[styles.emptyText, isDarkMode ? styles.darkText : styles.lightText]}>
-                  No jobs found.
+                  {loading ? 'Loading Jobs...' : 'No Jobs Found'}
                 </Text>
               }
               scrollEnabled={false}

@@ -80,7 +80,17 @@ const ProviderProfile = ({ isDarkMode, toggleDarkMode, route }) => {
           </Text>
           {!profileCreated ? (
            <View>
-           <Text style={styles.label}>Company Name</Text>
+          
+           <Text style={[ !isDarkMode ? styles.label : styles.lightLabel]}>HR Name</Text>
+           <TextInput
+             style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
+             value={formData.hrName}
+             onChangeText={(text) => handleChange('hrName', text)}
+             placeholder="HR Name"
+             placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
+           />
+           
+           <Text style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Company Name</Text>
            <TextInput
              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
              value={formData.companyName}
@@ -89,16 +99,7 @@ const ProviderProfile = ({ isDarkMode, toggleDarkMode, route }) => {
              placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
            />
          
-           <Text style={styles.label}>HR Name</Text>
-           <TextInput
-             style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
-             value={formData.hrName}
-             onChangeText={(text) => handleChange('hrName', text)}
-             placeholder="HR Name"
-             placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
-           />
-         
-           <Text style={styles.label}>HR WhatsApp Number</Text>
+           <Text style={[ !isDarkMode ? styles.label : styles.lightLabel]}>HR WhatsApp Number</Text>
            <TextInput
              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
              value={formData.hrWhatsappNumber}
@@ -107,7 +108,7 @@ const ProviderProfile = ({ isDarkMode, toggleDarkMode, route }) => {
              placeholderTextColor={isDarkMode ? '#888' : '#ccc'}
            />
          
-           <Text style={styles.label}>Email</Text>
+           <Text style={[ !isDarkMode ? styles.label : styles.lightLabel]}>Email</Text>
            <TextInput
              style={[styles.input, isDarkMode ? styles.darkInput : styles.lightInput]}
              value={formData.email}
@@ -172,6 +173,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
+    marginBottom: 5,
+  },
+  lightLabel:{
+    fontSize: 16,
+    fontWeight: 'white',
+    color: '#fff',
     marginBottom: 5,
   }
 });

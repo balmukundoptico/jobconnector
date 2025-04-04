@@ -3,6 +3,7 @@ import React, { useState } from 'react'; // React core
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Animated } from 'react-native'; // RN components
 import { useNavigation } from '@react-navigation/native'; // Navigation hook
 import { requestOTP, verifyOTP } from '../utils/api'; // API functions
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // AuthForm component with email OTP support
 export default function AuthForm({ isDarkMode, toggleDarkMode, route }) {
@@ -70,6 +71,7 @@ export default function AuthForm({ isDarkMode, toggleDarkMode, route }) {
       setMessage('Please enter a WhatsApp number or email');
       return;
     }
+  
     try {
       const isEmail = contact.includes('@');
       const payload = {
@@ -78,10 +80,21 @@ export default function AuthForm({ isDarkMode, toggleDarkMode, route }) {
         role,
         bypass: true,
       };
+  
       const response = await verifyOTP(payload); // Live backend call
       setMessage(response.data.message); // Show message
+  
       if (response.data.success) {
-        navigation.navigate(response.data.isNewUser ? 'Register' : (role === 'seeker' ? 'SeekerDashboard' : role === 'provider' ? 'ProviderDashboard' : 'AdminDashboard'), { user: response.data.user, contact });
+        // Save user details in AsyncStorage
+        await AsyncStorage.setItem('user', JSON.stringify(response.data.user));
+  
+        // Navigate to the correct screen
+        navigation.navigate(
+          response.data.isNewUser ? 'Register' : 
+          role === 'seeker' ? 'SeekerDashboard' : 
+          role === 'provider' ? 'ProviderDashboard' : 'AdminDashboard',
+          { user: response.data.user, contact }
+        );
       }
     } catch (error) {
       setMessage('Error bypassing OTP: ' + error.message);
